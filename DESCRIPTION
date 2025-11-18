@@ -1,7 +1,7 @@
 Package: scAB
 Type: Package
 Title: R package for integrating single-cell and bulk RNA-seq data with
-        phenotype information.
+        phenotype information
 Version: 1.0.0
 Author: Qinran Zhang
 Maintainer: Qinran Zhang<qr_zhang@whu.edu.cn>
@@ -11,7 +11,26 @@ biocViews:
 License: GPL-3
 Encoding: UTF-8
 LazyData: true
-Imports: Seurat, preprocessCore, MASS, diptest, multimode, survival
-RoxygenNote: 7.1.2
+Imports: 
+    Seurat,
+    diptest,
+    multimode,
+    survival,
+    cli,
+    purrr,
+    Matrix,
+    stats,
+    SeuratObject,
+    SigBridgeRUtils,
+    methods
+RoxygenNote: 7.3.3
 NeedsCompilation: no
 Packaged: 2022-04-18 01:11:46 UTC; MSI-NB
+Suggests: 
+    furrr,
+    matrixStats,
+    pak,
+    preprocessCore
+LinkingTo: 
+    Rcpp,
+    RcppArmadillo
