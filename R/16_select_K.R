@@ -38,7 +38,7 @@ select_K.optimized <- function(
 ) {
     # Cpp func
     select_K_optimized(
-        X = Object$X,
+        X = as.matrix(Object$X),
         K_max = K_max,
         repeat_times = repeat_times,
         maxiter = maxiter,
