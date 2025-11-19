@@ -26,8 +26,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // select_K_optimized
-List select_K_optimized(const arma::mat& X, int K_max, int repeat_times, int maxiter, int seed, bool verbose);
-RcppExport SEXP _scAB_select_K_optimized(SEXP XSEXP, SEXP K_maxSEXP, SEXP repeat_timesSEXP, SEXP maxiterSEXP, SEXP seedSEXP, SEXP verboseSEXP) {
+List select_K_optimized(const arma::mat& X, int K_max, int repeat_times, int maxiter, bool verbose);
+RcppExport SEXP _scAB_select_K_optimized(SEXP XSEXP, SEXP K_maxSEXP, SEXP repeat_timesSEXP, SEXP maxiterSEXP, SEXP verboseSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -35,16 +35,15 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< int >::type K_max(K_maxSEXP);
     Rcpp::traits::input_parameter< int >::type repeat_times(repeat_timesSEXP);
     Rcpp::traits::input_parameter< int >::type maxiter(maxiterSEXP);
-    Rcpp::traits::input_parameter< int >::type seed(seedSEXP);
     Rcpp::traits::input_parameter< bool >::type verbose(verboseSEXP);
-    rcpp_result_gen = Rcpp::wrap(select_K_optimized(X, K_max, repeat_times, maxiter, seed, verbose));
+    rcpp_result_gen = Rcpp::wrap(select_K_optimized(X, K_max, repeat_times, maxiter, verbose));
     return rcpp_result_gen;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
     {"_scAB_NMF_optimized", (DL_FUNC) &_scAB_NMF_optimized, 4},
-    {"_scAB_select_K_optimized", (DL_FUNC) &_scAB_select_K_optimized, 6},
+    {"_scAB_select_K_optimized", (DL_FUNC) &_scAB_select_K_optimized, 5},
     {NULL, NULL, 0}
 };
 

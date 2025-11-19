@@ -36,13 +36,14 @@ select_K.optimized <- function(
     seed = SigBridgeRUtils::getFuncOption("seed"),
     verbose = SigBridgeRUtils::getFuncOption("verbose")
 ) {
+    set.seed(seed)
     # Cpp func
-    select_K_optimized(
+    res <- select_K_optimized(
         X = as.matrix(Object$X),
         K_max = K_max,
         repeat_times = repeat_times,
         maxiter = maxiter,
-        seed = seed,
         verbose = verbose
     )
+    res$K
 }

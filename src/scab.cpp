@@ -73,12 +73,7 @@ List select_K_optimized(const arma::mat& X,
                         int K_max = 20,
                         int repeat_times = 10,
                         int maxiter = 2000,
-                        int seed = 0,
-                        bool verbose = true) {
-    
-    // Set random seed
-    arma_rng::set_seed(seed);
-    
+                        bool verbose = true) {    
     // K values to test: 2 to K_max
     int n_K = K_max - 1;  // Number of K values (2, 3, ..., K_max)
     

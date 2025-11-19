@@ -5,7 +5,7 @@ NMF_optimized <- function(X, K, maxiter = 2000L, tol = 1e-5) {
     .Call('_scAB_NMF_optimized', PACKAGE = 'scAB', X, K, maxiter, tol)
 }
 
-select_K_optimized <- function(X, K_max = 20L, repeat_times = 10L, maxiter = 2000L, seed = 0L, verbose = TRUE) {
-    .Call('_scAB_select_K_optimized', PACKAGE = 'scAB', X, K_max, repeat_times, maxiter, seed, verbose)
+select_K_optimized <- function(X, K_max = 20L, repeat_times = 10L, maxiter = 2000L, verbose = TRUE) {
+    .Call('_scAB_select_K_optimized', PACKAGE = 'scAB', X, K_max, repeat_times, maxiter, verbose)
 }
 
