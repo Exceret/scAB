@@ -190,7 +190,7 @@ SequentialEvaluate <- function(
 ) {
     purrr::map_dbl(
         seq_len(nrow(param_grid)),
-        function(i) {
+        ~ {
             cv_scores <- vapply(
                 seq_len(cross_k),
                 function(cv_idx) {
@@ -202,8 +202,8 @@ SequentialEvaluate <- function(
                         cvlist = cvlist,
                         fixed_matrices = fixed_matrices,
                         K = K,
-                        para_1 = param_grid$para_1[i],
-                        para_2 = param_grid$para_2[i]
+                        para_1 = param_grid$para_1[.x],
+                        para_2 = param_grid$para_2[.x]
                     )
                 },
                 numeric(1)
@@ -371,14 +371,17 @@ EvaluateSingleCV <- function(
     ginvH <- SigBridgeRUtils::ginv2(s_res$H)
     new_W <- test_subset %*% ginvH
 
+    df <- as.data.frame(as.matrix(s_res$W))
     clin_km <- data.frame(
         time = train_pheno$time,
         status = train_pheno$status,
-        s_res$W
+        df
     )
+    new_W <- as.data.frame(as.matrix(new_W))
+    colnames(new_W) <- colnames(df)
 
     res.cox <- survival::coxph(survival::Surv(time, status) ~ ., data = clin_km)
-    pre_test <- stats::predict(res.cox, data.frame(new_W))
+    pre_test <- stats::predict(res.cox, new_W)
 
     survival::concordance(
         survival::coxph(
