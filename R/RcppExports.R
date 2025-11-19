@@ -9,3 +9,7 @@ select_K_optimized <- function(X, K_max = 20L, repeat_times = 10L, maxiter = 200
     .Call('_scAB_select_K_optimized', PACKAGE = 'scAB', X, K_max, repeat_times, maxiter, verbose)
 }
 
+scAB_inner <- function(X, A, D, L, S, K, alpha = 0.005, alpha_2 = 0.005, maxiter = 2000L, convergence_threshold = 1e-5) {
+    .Call('_scAB_scAB_inner', PACKAGE = 'scAB', X, A, D, L, S, K, alpha, alpha_2, maxiter, convergence_threshold)
+}
+

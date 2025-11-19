@@ -289,7 +289,7 @@ ParallelEvaluate <- function(
         .progress = verbose,
         .options = SigBridgeRUtils::furrr_options(
             seed = seed,
-            packages = c("survival", "SigBridgeRUtils"),
+            packages = c("survival", "SigBridgeRUtils", "Matrix"),
             globals = c(
                 "train_data",
                 "train_phenotype",
@@ -341,8 +341,8 @@ EvaluateSingleCV <- function(
     test_idx <- cvlist[[cv_idx]]
     train_subset <- train_data[-test_idx, , drop = FALSE]
     test_subset <- train_data[test_idx, , drop = FALSE]
-    train_pheno <- train_phenotype[-test_idx, ]
-    test_pheno <- train_phenotype[test_idx, ]
+    train_pheno <- train_phenotype[-test_idx, , drop = FALSE]
+    test_pheno <- train_phenotype[test_idx, , drop = FALSE]
 
     ss <- guanrank2(train_pheno[, c("time", "status")])
     S <- diag(1 - ss[rownames(train_pheno), 3])

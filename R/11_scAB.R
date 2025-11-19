@@ -27,60 +27,21 @@ scAB.optimized <- function(
     if (Object$method != "") {
         set.seed(seed)
     }
-    X <- Object$X
-    A <- Object$A
-    L <- Object$L
-    D <- Object$D
-    S <- Object$S
-    eps <- 2.2204e-256
-    nr <- nrow(X)
-    nc <- ncol(X)
-    W <- Matrix::Matrix(stats::runif(nr * K), nrow = nr, ncol = K)
-    H <- Matrix::Matrix(stats::runif(K * nc), nrow = K, ncol = nc)
-    SS <- S %*% S
-
-    loss_func <- function(X, W, H, S, L, alpha, alpha_2) {
-        # loss <- norm(X - W %*% H, "F")^2 +
-        #     alpha * (norm(S %*% W, "F")^2) +
-        #     alpha_2 * sum(diag(H %*% L %*% t(H)))
-        loss1 <- Matrix::norm(X - W %*% H, "F")^2
-        loss2 <- alpha * (Matrix::norm(S %*% W, "F")^2)
-        loss3 <- alpha_2 * sum(H * (H %*% L)) # diag(H %*% L %*% t(H)) is equivalent to rowSums(H * (H %*% L))
-
-        return(loss1 + loss2 + loss3)
-    }
-    # tD <- t(D)
-    # tA <- t(A)
-    tX <- Matrix::t(X)
-
-    for (iter in seq_len(maxiter)) {
-        # W_old <- W # no use
-        H <- H *
-            (crossprod(W, X) + alpha_2 * tcrossprod(H, A)) /
-            (crossprod(W, W) %*% H + alpha_2 * tcrossprod(H, D) + eps)
-        Pena <- SS %*% W
-        W <- W *
-            tcrossprod(X, H) /
-            (W %*% tcrossprod(H, H) + alpha * Pena + eps)
-
-        # tW <- t(W) # no use
-
-        if (iter != 1) {
-            eucl_dist <- loss_func(X, W, H, S, L, alpha, alpha_2)
-            d_eucl <- abs(eucl_dist - old_eucl)
-            if (d_eucl < convergence_threshold) {
-                break
-            }
-            old_eucl <- eucl_dist
-        } else {
-            old_eucl <- loss_func(X, W, H, S, L, alpha, alpha_2)
-        }
-    }
-    list(
-        W = W,
-        H = H,
-        iter = iter,
-        loss = old_eucl,
-        method = Object$method
+    # Cpp func
+    result <- scAB_inner(
+        X = Matrix::Matrix(Object$X, sparse = TRUE),
+        A = Matrix::Matrix(Object$A, sparse = TRUE),
+        D = Matrix::Matrix(Object$D, sparse = TRUE),
+        L = Matrix::Matrix(Object$L, sparse = TRUE),
+        S = Matrix::Matrix(Object$S, sparse = TRUE),
+        K = K,
+        alpha = alpha,
+        alpha_2 = alpha_2,
+        maxiter = maxiter,
+        convergence_threshold = convergence_threshold
     )
+
+    result$method <- Object$method
+
+    result
 }

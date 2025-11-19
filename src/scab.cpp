@@ -166,3 +166,98 @@ List select_K_optimized(const arma::mat& X,
         Named("K_all") = K_all_vec
     );
 }
+
+
+// [[Rcpp::export]]
+List scAB_inner(
+    const arma::sp_mat& X,
+    const arma::sp_mat& A,
+    const arma::sp_mat& D,
+    const arma::sp_mat& L,
+    const arma::sp_mat& S,
+    int K,
+    double alpha = 0.005,
+    double alpha_2 = 0.005,
+    int maxiter = 2000,
+    double convergence_threshold = 1e-5
+) {
+    // Constants
+    const double eps = 2.2204e-256;
+    const int nr = X.n_rows;
+    const int nc = X.n_cols;
+    
+    // Initialize W and H with random uniform values
+    arma::mat W = arma::randu<arma::mat>(nr, K);
+    arma::mat H = arma::randu<arma::mat>(K, nc);
+    
+    // Pre-compute S * S
+    arma::sp_mat SS = S * S;
+    
+    // Variables for convergence check
+    double old_eucl = 0.0;
+    double eucl_dist = 0.0;
+    int final_iter = 0;
+    
+    // Pre-compute matrices that don't change
+    arma::mat X_mat = arma::mat(X);
+    arma::mat A_mat = arma::mat(A);
+    arma::mat D_mat = arma::mat(D);
+    arma::mat L_mat = arma::mat(L);
+    
+    // Loss function (inline computation)
+    auto compute_loss = [&]() -> double {
+        arma::mat diff = X_mat - W * H;
+        double loss1 = arma::accu(diff % diff); // Frobenius norm squared
+        
+        arma::mat SW = arma::mat(S * W);
+        double loss2 = alpha * arma::accu(SW % SW);
+        
+        arma::mat HL = H * arma::mat(L_mat);
+        double loss3 = alpha_2 * arma::accu(H % HL);
+        
+        return loss1 + loss2 + loss3;
+    };
+
+    // Main iteration loop
+    for (int iter = 1; iter <= maxiter; iter++) {
+        // Update H
+        arma::mat WtX = W.t() * X_mat;
+        arma::mat HAt = H * A_mat.t();
+        arma::mat WtW_H = (W.t() * W) * H;
+        arma::mat HDt = H * D_mat.t();
+        
+        H = H % (WtX + alpha_2 * HAt) / (WtW_H + alpha_2 * HDt + eps);
+        
+        // Update W
+        arma::mat Pena = arma::mat(SS * W);
+        arma::mat X_Ht = X_mat * H.t();
+        arma::mat W_HHt = W * (H * H.t());
+        
+        W = W % X_Ht / (W_HHt + alpha * Pena + eps);
+        
+        // Check convergence
+        if (iter > 1) {
+            eucl_dist = compute_loss();
+            double d_eucl = std::abs(eucl_dist - old_eucl);
+            
+            if (d_eucl < convergence_threshold) {
+                final_iter = iter;
+                old_eucl = eucl_dist;
+                break;
+            }
+            old_eucl = eucl_dist;
+        } else {
+            old_eucl = compute_loss();
+        }
+        
+        final_iter = iter;
+    }
+    
+    // Return results as a list
+    return List::create(
+        Named("W") = W,
+        Named("H") = H,
+        Named("iter") = final_iter,
+        Named("loss") = old_eucl
+    );
+}
