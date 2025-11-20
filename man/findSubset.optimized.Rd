@@ -9,7 +9,7 @@ findSubset.optimized(Object, scAB_Object, tred = 2L)
 \arguments{
 \item{Object}{a Seurat object}
 
-\item{scAB_Object}{a scAB_data object}
+\item{scAB_Object}{a scAB_data object from scAB()}
 
 \item{tred}{threshold}
 }

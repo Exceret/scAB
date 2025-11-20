@@ -1,7 +1,7 @@
 #' @title Subsets identification
 #'
 #' @param Object a Seurat object
-#' @param scAB_Object a scAB_data object
+#' @param scAB_Object a scAB_data object from scAB()
 #' @param tred threshold
 #'
 #' @return a Seurat object
