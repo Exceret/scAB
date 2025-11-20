@@ -125,32 +125,37 @@ create_scAB.v5 <- function(
     ...
 ) {
     # cell neighbors
-    if ("RNA_snn" %in% names(Object@graphs)) {
-        A <- Matrix::Matrix(SeuratObject::Graphs(
-            object = Object,
-            slot = "RNA_snn"
-        ))
+    A <- if ("RNA_snn" %in% names(Object@graphs)) {
         if (verbose) {
             cli::cli_alert_info(
                 " Using {.val RNA_snn} graph for network."
             )
         }
-    } else if ("integrated_snn" %in% names(Object@graphs)) {
-        A <- Matrix::Matrix(SeuratObject::Graphs(
+        Matrix::Matrix(SeuratObject::Graphs(
             object = Object,
-            slot = "integrated_snn"
+            slot = "RNA_snn"
         ))
-
+    } else if ("integrated_snn" %in% names(Object@graphs)) {
         if (verbose) {
             cli::cli_alert_info(
                 "Using {.val integrated_snn} graph for network."
             )
         }
+        Matrix::Matrix(SeuratObject::Graphs(
+            object = Object,
+            slot = "integrated_snn"
+        ))
     } else {
         cli::cli_abort(c(
             "x" = "No `RNA_snn` or `integrated_snn` graph in the given Seurat object. Please check `Object@graphs`."
         ))
     }
+    if (verbose) {
+        ts_cli$cli_alert_info(
+            "Calculating L, D and A"
+        )
+    }
+
     Matrix::diag(A) <- 0
     A@x[which(A@x != 0)] <- 1
     degrees <- Matrix::rowSums(A)
@@ -165,18 +170,43 @@ create_scAB.v5 <- function(
     # similarity matrix
     sc_exprs <- Matrix::Matrix(SeuratObject::LayerData(Object))
     common <- intersect(rownames(bulk_dataset), rownames(sc_exprs))
-    dataset0 <- cbind(bulk_dataset[common, ], sc_exprs[common, ]) # Dataset before quantile normalization.
+
+    bulk_mat <- Matrix::Matrix(as.matrix(bulk_dataset[common, ]))
+
+    dataset0 <- Matrix::cbind2(bulk_mat, sc_exprs[common, ]) # Dataset before quantile normalization.
+
+    if (verbose) {
+        ts_cli$cli_alert_info(
+            "Normalizing quantiles of data"
+        )
+    }
+
     dataset1 <- SigBridgeRUtils::normalize.quantiles(as.matrix(dataset0)) # Dataset after quantile normalization.
-    dataset1 <- Matrix::Matrix(dataset1)
+
     rownames(dataset1) <- common
     colnames(dataset1) <- colnames(dataset0)
 
     ncol_bulk <- ncol(bulk_dataset)
-    Expression_bulk <- as.matrix(dataset1[, seq_len(ncol_bulk)])
-    Expression_cell <- as.matrix(dataset1[, (ncol_bulk + 1):ncol(dataset1)])
+
+    Expression_bulk <- dataset1[, seq_len(ncol_bulk)]
+    Expression_cell <- dataset1[, (ncol_bulk + 1):ncol(dataset1)]
+
+    rm(dataset0, dataset1, bulk_mat, sc_exprs, degrees, eps, common)
+    gc(verbose = FALSE)
+    if (verbose) {
+        ts_cli$cli_alert_info(
+            "Calculating correlation"
+        )
+    }
 
     X <- stats::cor(Expression_bulk, Expression_cell)
     X <- X / Matrix::norm(X, "F")
+
+    if (verbose) {
+        ts_cli$cli_alert_info(
+            "Guanranking"
+        )
+    }
 
     # phenotype ranking
     if (method == "survival") {

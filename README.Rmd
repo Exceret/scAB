@@ -27,7 +27,7 @@ Fork from [scAB](https://github.com/jinworks/scAB), see [SigBridgeR](https://git
 
 ## Installation
 
-scAB R package can be easily installed from Github using devtools:
+scAB R package can be easily installed from Github using `pak`:
 
 ```{r,eval=FALSE}     
 pak::pkg_install("Exceret/scAB")

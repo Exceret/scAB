@@ -16,7 +16,7 @@ scAB.
 
 ## Installation
 
-scAB R package can be easily installed from Github using devtools:
+scAB R package can be easily installed from Github using `pak`:
 
     pak::pkg_install("Exceret/scAB")
 
