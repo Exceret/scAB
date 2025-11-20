@@ -261,27 +261,40 @@ ParallelEvaluate <- function(
         ))
     }
     # Pkg carrier is used to pass arguments and avoid used large objects in the closure
-    ScoringAll <- function(i) {
-        cv_scores <- vapply(
-            seq_len(cross_k),
-            function(cv_idx) {
-                EvaluateSingleCV(
-                    cv_idx = cv_idx,
-                    method = method,
-                    train_data = train_data,
-                    train_phenotype = train_phenotype,
-                    cvlist = cvlist,
-                    fixed_matrices = fixed_matrices,
-                    K = K,
-                    para_1 = param_grid$para_1[i],
-                    para_2 = param_grid$para_2[i]
-                )
-            },
-            numeric(1)
-        )
+    ScoringAll <- SigBridgeRUtils::crate(
+        function(i) {
+            cv_scores <- vapply(
+                seq_len(cross_k),
+                function(cv_idx) {
+                    EvaluateSingleCV(
+                        cv_idx = cv_idx,
+                        method = method,
+                        train_data = train_data,
+                        train_phenotype = train_phenotype,
+                        cvlist = cvlist,
+                        fixed_matrices = fixed_matrices,
+                        K = K,
+                        para_1 = param_grid$para_1[i],
+                        para_2 = param_grid$para_2[i]
+                    )
+                },
+                numeric(1)
+            )
 
-        mean(cv_scores)
-    }
+            mean(cv_scores)
+        },
+        method = method,
+        train_data = train_data,
+        train_phenotype = train_phenotype,
+        cvlist = cvlist,
+        fixed_matrices = fixed_matrices,
+        K = K,
+        cross_k = cross_k,
+        param_grid = param_grid,
+        EvaluateSingleCV = EvaluateSingleCV,
+        guanrank2 = guanrank2,
+        scAB.optimized = scAB.optimized
+    )
 
     res <- SigBridgeRUtils::future_map_dbl(
         seq_len(nrow(param_grid)),
@@ -289,19 +302,7 @@ ParallelEvaluate <- function(
         .progress = verbose,
         .options = SigBridgeRUtils::furrr_options(
             seed = seed,
-            packages = c("survival", "SigBridgeRUtils", "Matrix"),
-            globals = c(
-                "train_data",
-                "train_phenotype",
-                "cvlist",
-                "fixed_matrices",
-                "K",
-                "cross_k",
-                "param_grid",
-                "EvaluateSingleCV",
-                "guanrank2",
-                "scAB.optimized"
-            )
+            packages = c("survival", "SigBridgeRUtils", "Matrix")
         )
     )
 
@@ -371,7 +372,11 @@ EvaluateSingleCV <- function(
     ginvH <- SigBridgeRUtils::ginv2(s_res$H)
     new_W <- test_subset %*% ginvH
 
-    df <- as.data.frame(as.matrix(s_res$W))
+    W_matrix <- as.matrix(s_res$W)
+    if (inherits(W_matrix, "Matrix")) {
+        W_matrix <- as.matrix(W_matrix) # 双重保险
+    }
+    df <- as.data.frame(W_matrix)
     clin_km <- data.frame(
         time = train_pheno$time,
         status = train_pheno$status,

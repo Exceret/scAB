@@ -187,11 +187,11 @@ create_scAB.v5 <- function(
     }
     # return
     obj <- list(
-        X = Matrix::Matrix(X),
-        S = Matrix::Matrix(S),
-        L = L,
-        D = Dhat,
-        A = Ahat,
+        X = Matrix::Matrix(X, sparse = TRUE),
+        S = Matrix::Matrix(S, sparse = TRUE),
+        L = Matrix::Matrix(L, sparse = TRUE),
+        D = Matrix::Matrix(Dhat, sparse = TRUE),
+        A = Matrix::Matrix(Ahat, sparse = TRUE),
         phenotype = phenotype,
         method = method
     )
