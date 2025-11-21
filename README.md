@@ -4,7 +4,7 @@
 
 Forked from [scAB](https://github.com/jinworks/scAB), see
 [SigBridgeR](https://github.com/WangLabCSU/SigBridgeR) for the usage of
-scAB.
+scAB. Independently usage of scAB is also viable.
 
 ## News:
 
@@ -18,7 +18,7 @@ scAB.
 
 ## Installation
 
-scAB R package can be easily installed from Github using `pak`:
+scAB package can be easily installed from Github using `pak`:
 
     pak::pkg_install("Exceret/scAB")
 

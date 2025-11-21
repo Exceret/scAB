@@ -227,10 +227,9 @@ SequentialEvaluate <- function(
     if (verbose) {
         cli::cli_progress_done()
     }
+    n_params <- nrow(param_grid)
 
     cv_scores_matrix <- matrix(0, nrow = n_params, ncol = cross_k)
-
-    n_params <- nrow(param_grid)
 
     for (param_idx in seq_len(n_params)) {
         para_1 <- param_grid$para_1[param_idx]
