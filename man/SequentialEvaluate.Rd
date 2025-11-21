@@ -33,7 +33,7 @@ SequentialEvaluate(
 
 \item{cross_k}{Number of cross-validation folds}
 
-\item{verbose}{Whether to show progress (default: TRUE)}
+\item{verbose}{Whether to show progress}
 }
 \value{
 Numeric vector of average CV scores for each parameter combination
@@ -44,7 +44,6 @@ For each parameter set in the grid, computes average cross-validation score.
 }
 \seealso{
 Other scAB_optimal_param: 
-\code{\link{EvaluateSingleCV}()},
 \code{\link{ParallelEvaluate}()},
 \code{\link{PreparePheno}()},
 \code{\link{select_alpha.optimized}()}

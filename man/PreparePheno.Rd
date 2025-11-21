@@ -20,7 +20,6 @@ to a data frame with status and time columns.
 }
 \seealso{
 Other scAB_optimal_param: 
-\code{\link{EvaluateSingleCV}()},
 \code{\link{ParallelEvaluate}()},
 \code{\link{SequentialEvaluate}()},
 \code{\link{select_alpha.optimized}()}

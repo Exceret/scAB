@@ -86,7 +86,6 @@ Other scAB:
 \code{\link{select_K.optimized}()}
 
 Other scAB_optimal_param: 
-\code{\link{EvaluateSingleCV}()},
 \code{\link{ParallelEvaluate}()},
 \code{\link{PreparePheno}()},
 \code{\link{SequentialEvaluate}()}

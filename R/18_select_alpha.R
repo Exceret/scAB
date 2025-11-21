@@ -168,10 +168,15 @@ PreparePheno <- function(Object) {
 #' Evaluates parameter combinations sequentially using cross-validation.
 #' For each parameter set in the grid, computes average cross-validation score.
 #'
-#' @inheritParams EvaluateSingleCV
+#' @param method Analysis method ("binary" or "survival")
 #' @param param_grid Data frame of parameter combinations to evaluate
+#' @param train_data Training data matrix
+#' @param train_phenotype Phenotype data for training
+#' @param cvlist List of cross-validation indices
+#' @param fixed_matrices Precomputed matrices (A, L, D)
+#' @param K Number of components
 #' @param cross_k Number of cross-validation folds
-#' @param verbose Whether to show progress (default: TRUE)
+#' @param verbose Whether to show progress
 #'
 #' @return Numeric vector of average CV scores for each parameter combination
 #'
@@ -188,30 +193,125 @@ SequentialEvaluate <- function(
     cross_k,
     verbose = TRUE
 ) {
-    purrr::map_dbl(
-        seq_len(nrow(param_grid)),
-        ~ {
-            cv_scores <- vapply(
-                seq_len(cross_k),
-                function(cv_idx) {
-                    EvaluateSingleCV(
-                        cv_idx = cv_idx,
-                        method = method,
-                        train_data = train_data,
-                        train_phenotype = train_phenotype,
-                        cvlist = cvlist,
-                        fixed_matrices = fixed_matrices,
-                        K = K,
-                        para_1 = param_grid$para_1[.x],
-                        para_2 = param_grid$para_2[.x]
-                    )
-                },
-                numeric(1)
+    cv_cache <- vector("list", cross_k)
+
+    if (verbose) {
+        cli::cli_progress_bar(name = 'Preparing CV cache', total = cross_k)
+    }
+
+    for (cv_idx in seq_len(cross_k)) {
+        test_idx <- cvlist[[cv_idx]]
+        train_pheno <- train_phenotype[-test_idx, , drop = FALSE]
+
+        ss <- guanrank2(train_pheno[, c("time", "status")])
+        S_matrix <- diag(1 - ss[rownames(train_pheno), 3])
+
+        cv_cache[[cv_idx]] <- list(
+            train_subset = train_data[-test_idx, , drop = FALSE],
+            test_subset = train_data[test_idx, , drop = FALSE],
+            train_pheno = train_pheno,
+            test_pheno = train_phenotype[test_idx, , drop = FALSE],
+            S_matrix = S_matrix,
+            Object_template = list(
+                phenotype = train_pheno,
+                A = fixed_matrices$A,
+                L = fixed_matrices$L,
+                D = fixed_matrices$D,
+                method = method
             )
-            mean(cv_scores)
-        },
-        .progress = verbose
-    )
+        )
+        if (verbose) {
+            cli::cli_progress_update()
+        }
+    }
+    if (verbose) {
+        cli::cli_progress_done()
+    }
+
+    cv_scores_matrix <- matrix(0, nrow = n_params, ncol = cross_k)
+
+    n_params <- nrow(param_grid)
+
+    for (param_idx in seq_len(n_params)) {
+        para_1 <- param_grid$para_1[param_idx]
+        para_2 <- param_grid$para_2[param_idx]
+
+        if (verbose) {
+            cli::cli_progress_bar(
+                name = 'Alpha = {para_1}, alpha_2 = {para_2}',
+                total = cross_k
+            )
+        }
+        # 对每个CV fold评估当前参数
+        for (cv_idx in seq_len(cross_k)) {
+            cache <- cv_cache[[cv_idx]]
+
+            # 构建优化对象（使用缓存的模板）
+            Object_cv <- c(
+                list(
+                    X = cache$train_subset,
+                    S = cache$S_matrix
+                ),
+                cache$Object_template
+            )
+            class(Object_cv) <- "scAB_data"
+
+            s_res <- scAB.optimized(
+                Object = Object_cv,
+                K = K,
+                alpha = para_1,
+                alpha_2 = para_2,
+                maxiter = 2000
+            )
+
+            ginvH <- SigBridgeRUtils::ginv2(s_res$H)
+            new_W <- cache$test_subset %*% ginvH
+
+            W_matrix <- as.matrix(s_res$W)
+
+            n_train <- nrow(W_matrix)
+            n_features <- ncol(W_matrix)
+
+            clin_data <- cbind(
+                cache$train_pheno$time,
+                cache$train_pheno$status,
+                W_matrix
+            )
+
+            col_names <- c("time", "status", paste0("V", seq_len(n_features)))
+            clin_km <- as.data.frame(clin_data)
+            colnames(clin_km) <- col_names
+
+            res.cox <- survival::coxph(
+                survival::Surv(time, status) ~ .,
+                data = clin_km,
+                x = FALSE,
+                y = FALSE
+            )
+
+            new_W_df <- as.data.frame(new_W)
+            colnames(new_W_df) <- paste0("V", seq_len(n_features))
+
+            pre_test <- predict(res.cox, newdata = new_W_df, type = "lp")
+
+            cv_scores_matrix[param_idx, cv_idx] <- survival::concordance(
+                survival::Surv(
+                    cache$test_pheno$time,
+                    cache$test_pheno$status
+                ) ~ pre_test
+            )$concordance
+
+            if (verbose) {
+                cli::cli_progress_update()
+            }
+        }
+
+        if (verbose) {
+            cli::cli_progress_done()
+        }
+    }
+
+    rowMeans(cv_scores_matrix)
 }
 
 
@@ -260,137 +360,142 @@ ParallelEvaluate <- function(
             workers
         ))
     }
-    # Pkg carrier is used to pass arguments and avoid used large objects in the closure
-    ScoringAll <- SigBridgeRUtils::crate(
-        function(i) {
-            cv_scores <- vapply(
-                seq_len(cross_k),
-                function(cv_idx) {
-                    EvaluateSingleCV(
-                        cv_idx = cv_idx,
-                        method = method,
-                        train_data = train_data,
-                        train_phenotype = train_phenotype,
-                        cvlist = cvlist,
-                        fixed_matrices = fixed_matrices,
-                        K = K,
-                        para_1 = param_grid$para_1[i],
-                        para_2 = param_grid$para_2[i]
-                    )
-                },
-                numeric(1)
+
+    if (verbose) {
+        cli::cli_progress_bar(name = 'Preparing CV cache', total = cross_k)
+    }
+
+    cv_cache <- vector("list", cross_k)
+
+    for (cv_idx in seq_len(cross_k)) {
+        test_idx <- cvlist[[cv_idx]]
+        train_pheno <- train_phenotype[-test_idx, , drop = FALSE]
+
+        # 预计算S矩阵
+        ss <- guanrank2(train_pheno[, c("time", "status")])
+        S_matrix <- diag(1 - ss[rownames(train_pheno), 3])
+
+        cv_cache[[cv_idx]] <- list(
+            train_subset = train_data[-test_idx, , drop = FALSE],
+            test_subset = train_data[test_idx, , drop = FALSE],
+            train_pheno = train_pheno,
+            test_pheno = train_phenotype[test_idx, , drop = FALSE],
+            S_matrix = S_matrix,
+            # 预构建Object模板
+            Object_template = list(
+                phenotype = train_pheno,
+                A = fixed_matrices$A,
+                L = fixed_matrices$L,
+                D = fixed_matrices$D,
+                method = method
             )
+        )
+        if (verbose) {
+            cli::cli_progress_update()
+        }
+    }
+    if (verbose) {
+        cli::cli_progress_done()
+    }
+    # === 并行评估函数（内联版本）===
+    ScoringAll <- function(param_idx) {
+        para_1 <- param_grid$para_1[param_idx]
+        para_2 <- param_grid$para_2[param_idx]
 
-            mean(cv_scores)
-        },
-        method = method,
-        train_data = train_data,
-        train_phenotype = train_phenotype,
-        cvlist = cvlist,
-        fixed_matrices = fixed_matrices,
-        K = K,
-        cross_k = cross_k,
-        param_grid = param_grid,
-        EvaluateSingleCV = EvaluateSingleCV,
-        guanrank2 = guanrank2,
-        scAB.optimized = scAB.optimized
-    )
+        # 对每个CV fold评估
+        cv_scores <- vapply(
+            seq_len(cross_k),
+            function(cv_idx) {
+                cache <- cv_cache[[cv_idx]]
 
+                # 构建优化对象
+                Object_cv <- c(
+                    list(
+                        X = cache$train_subset,
+                        S = cache$S_matrix
+                    ),
+                    cache$Object_template
+                )
+                class(Object_cv) <- "scAB_data"
+
+                # 运行优化
+                s_res <- scAB.optimized(
+                    Object = Object_cv,
+                    K = K,
+                    alpha = para_1,
+                    alpha_2 = para_2,
+                    maxiter = 2000
+                )
+
+                # 矩阵运算
+                ginvH <- SigBridgeRUtils::ginv2(s_res$H)
+                new_W <- cache$test_subset %*% ginvH
+                W_matrix <- as.matrix(s_res$W)
+
+                # 准备Cox数据
+                n_features <- ncol(W_matrix)
+                clin_data <- cbind(
+                    cache$train_pheno$time,
+                    cache$train_pheno$status,
+                    W_matrix
+                )
+
+                col_names <- c(
+                    "time",
+                    "status",
+                    paste0("V", seq_len(n_features))
+                )
+                clin_km <- as.data.frame(clin_data)
+                colnames(clin_km) <- col_names
+
+                # Cox模型拟合
+                res.cox <- survival::coxph(
+                    survival::Surv(time, status) ~ .,
+                    data = clin_km,
+                    x = FALSE,
+                    y = FALSE
+                )
+
+                # 预测
+                new_W_df <- as.data.frame(new_W)
+                colnames(new_W_df) <- paste0("V", seq_len(n_features))
+                pre_test <- stats::predict(
+                    res.cox,
+                    newdata = new_W_df,
+                    type = "lp"
+                )
+
+                # 计算concordance
+                survival::concordance(
+                    survival::Surv(
+                        cache$test_pheno$time,
+                        cache$test_pheno$status
+                    ) ~ pre_test
+                )$concordance
+            },
+            numeric(1)
+        )
+
+        mean(cv_scores)
+    }
+
+    # === 并行执行 ===
     res <- SigBridgeRUtils::future_map_dbl(
         seq_len(nrow(param_grid)),
         ScoringAll,
         .progress = verbose,
         .options = SigBridgeRUtils::furrr_options(
             seed = seed,
-            packages = c("survival", "SigBridgeRUtils", "Matrix")
+            packages = c(
+                "survival",
+                "SigBridgeRUtils",
+                "Matrix",
+                "Rcpp",
+                "scAB"
+            ),
+            globals = c("cv_cache", "param_grid", "K", "method")
         )
     )
 
     res
-}
-
-#' @title Evaluate Single Cross-Validation Fold
-#' @description
-#' Evaluates model performance for a single cross-validation fold.
-#' Trains model on training subset and tests on validation subset.
-#'
-#' @param cv_idx Cross-validation fold index
-#' @param method Analysis method ("binary" or "survival")
-#' @param train_data Training data matrix
-#' @param train_phenotype Phenotype data for training
-#' @param cvlist List of cross-validation indices
-#' @param fixed_matrices Precomputed matrices (A, L, D)
-#' @param K Number of components
-#' @param para_1 First parameter value
-#' @param para_2 Second parameter value
-#'
-#' @return Concordance score for the validation fold
-#'
-#' @family scAB_optimal_param
-#' @export
-EvaluateSingleCV <- function(
-    cv_idx,
-    method,
-    train_data,
-    train_phenotype,
-    cvlist,
-    fixed_matrices,
-    K,
-    para_1,
-    para_2
-) {
-    test_idx <- cvlist[[cv_idx]]
-    train_subset <- train_data[-test_idx, , drop = FALSE]
-    test_subset <- train_data[test_idx, , drop = FALSE]
-    train_pheno <- train_phenotype[-test_idx, , drop = FALSE]
-    test_pheno <- train_phenotype[test_idx, , drop = FALSE]
-
-    ss <- guanrank2(train_pheno[, c("time", "status")])
-    S <- diag(1 - ss[rownames(train_pheno), 3])
-
-    Object_cv <- structure(
-        list(
-            X = train_subset,
-            S = S,
-            phenotype = train_pheno,
-            A = fixed_matrices$A,
-            L = fixed_matrices$L,
-            D = fixed_matrices$D,
-            method = method
-        ),
-        class = "scAB_data"
-    )
-
-    s_res <- scAB.optimized(
-        Object = Object_cv,
-        K = K,
-        alpha = para_1,
-        alpha_2 = para_2,
-        maxiter = 2000
-    )
-
-    ginvH <- SigBridgeRUtils::ginv2(s_res$H)
-    new_W <- test_subset %*% ginvH
-
-    W_matrix <- as.matrix(s_res$W)
-    if (inherits(W_matrix, "Matrix")) {
-        W_matrix <- as.matrix(W_matrix) # 双重保险
-    }
-    df <- as.data.frame(W_matrix)
-    clin_km <- data.frame(
-        time = train_pheno$time,
-        status = train_pheno$status,
-        df
-    )
-    new_W <- as.data.frame(as.matrix(new_W))
-    colnames(new_W) <- colnames(df)
-
-    res.cox <- survival::coxph(survival::Surv(time, status) ~ ., data = clin_km)
-    pre_test <- stats::predict(res.cox, new_W)
-
-    survival::concordance(
-        survival::coxph(
-            survival::Surv(test_pheno$time, test_pheno$status) ~ pre_test
-        )
-    )$concordance
 }

@@ -53,7 +53,6 @@ Uses future framework for parallel processing across multiple workers.
 }
 \seealso{
 Other scAB_optimal_param: 
-\code{\link{EvaluateSingleCV}()},
 \code{\link{PreparePheno}()},
 \code{\link{SequentialEvaluate}()},
 \code{\link{select_alpha.optimized}()}

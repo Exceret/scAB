@@ -17,7 +17,6 @@ Imports:
     multimode,
     survival,
     cli,
-    purrr,
     Matrix,
     stats,
     SeuratObject,
