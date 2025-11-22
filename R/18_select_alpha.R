@@ -237,7 +237,11 @@ SequentialEvaluate <- function(
 
         if (verbose) {
             cli::cli_progress_bar(
-                name = 'Alpha = {para_1}, alpha_2 = {para_2}',
+                name = sprintf(
+                    'Alpha = %.2f, alpha_2 = %0.2f',
+                    para_1,
+                    para_2
+                ),
                 total = cross_k
             )
         }
@@ -407,7 +411,6 @@ ParallelEvaluate <- function(
             function(cv_idx) {
                 cache <- cv_cache[[cv_idx]]
 
-                # 构建优化对象
                 Object_cv <- c(
                     list(
                         X = cache$train_subset,
@@ -417,7 +420,6 @@ ParallelEvaluate <- function(
                 )
                 class(Object_cv) <- "scAB_data"
 
-                # 运行优化
                 s_res <- scAB.optimized(
                     Object = Object_cv,
                     K = K,
@@ -426,12 +428,10 @@ ParallelEvaluate <- function(
                     maxiter = 2000
                 )
 
-                # 矩阵运算
                 ginvH <- SigBridgeRUtils::ginv2(s_res$H)
                 new_W <- cache$test_subset %*% ginvH
                 W_matrix <- as.matrix(s_res$W)
 
-                # 准备Cox数据
                 n_features <- ncol(W_matrix)
                 clin_data <- cbind(
                     cache$train_pheno$time,
@@ -447,7 +447,6 @@ ParallelEvaluate <- function(
                 clin_km <- as.data.frame(clin_data)
                 colnames(clin_km) <- col_names
 
-                # Cox模型拟合
                 res.cox <- survival::coxph(
                     survival::Surv(time, status) ~ .,
                     data = clin_km,
@@ -455,7 +454,6 @@ ParallelEvaluate <- function(
                     y = FALSE
                 )
 
-                # 预测
                 new_W_df <- as.data.frame(new_W)
                 colnames(new_W_df) <- paste0("V", seq_len(n_features))
                 pre_test <- stats::predict(
@@ -464,7 +462,6 @@ ParallelEvaluate <- function(
                     type = "lp"
                 )
 
-                # 计算concordance
                 survival::concordance(
                     survival::Surv(
                         cache$test_pheno$time,
@@ -478,7 +475,6 @@ ParallelEvaluate <- function(
         mean(cv_scores)
     }
 
-    # === 并行执行 ===
     res <- SigBridgeRUtils::future_map_dbl(
         seq_len(nrow(param_grid)),
         ScoringAll,
