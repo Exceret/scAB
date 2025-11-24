@@ -290,7 +290,7 @@ SequentialEvaluate <- function(
                 y = FALSE
             )
 
-            new_W_df <- as.data.frame(new_W)
+            new_W_df <- as.data.frame(as.matrix(force(new_W)))
             colnames(new_W_df) <- paste0("V", seq_len(n_features))
 
             pre_test <- stats::predict(res.cox, newdata = new_W_df, type = "lp")
