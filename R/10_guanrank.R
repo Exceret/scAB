@@ -183,77 +183,20 @@ guanrank_elf <- function(mat, unit_time = FALSE, complete = FALSE) {
 #' @export
 #'
 guanrank2 <- function(mat, complete = FALSE) {
+    # Convert to matrix and extract first two columns
     mat <- as.matrix(mat)
     mat <- mat[, 1:2]
-    colnames(mat) = c("time", "status")
-    storage.mode(mat) = "numeric"
+    colnames(mat) <- c("time", "status")
+    storage.mode(mat) <- "numeric"
+
+    # Sort by time
     mat <- mat[order(mat[, "time"]), ]
 
+    # Compute Kaplan-Meier curve
     mat_curve <- scAB::km_curve(mat)
-    n <- nrow(mat_curve)
 
-    mat_guanrank <- cbind(mat_curve, rank = rep(0, n))
-    vect <- mat_guanrank[, "time"]
-    vecs <- mat_guanrank[, "status"]
-    # vectorized pipeline is not faster than the loop as I expected.
-    for (i in seq_len(n)) {
-        tA <- mat_guanrank[i, "time"]
-        rA <- mat_guanrank[i, "survival_rate"]
-        sA <- mat_guanrank[i, "status"]
-        if (sA == 1) {
-            tBgttA <- mat_guanrank[vect > tA, "survival_rate"]
-            tBletA_sBeq0 <- mat_guanrank[
-                vect <= tA & vecs == 0,
-                "survival_rate"
-            ]
-            tBeqtA_sBeq1 <- mat_guanrank[
-                vect == tA & vecs == 1,
-                "survival_rate"
-            ]
-            mat_guanrank[i, "rank"] = ifelse(
-                length(tBgttA) == 0,
-                0,
-                1 * length(tBgttA)
-            ) +
-                ifelse(length(tBletA_sBeq0) == 0, 0, sum(rA / tBletA_sBeq0)) +
-                ifelse(length(tBeqtA_sBeq1) == 0, 0, 0.5 * length(tBeqtA_sBeq1))
-        }
-        if (sA == 0) {
-            tBgetA_sBeq0 <- mat_guanrank[
-                vect >= tA & vecs == 0,
-                "survival_rate"
-            ]
-            tBgetA_sBeq1 <- mat_guanrank[
-                vect >= tA & vecs == 1,
-                "survival_rate"
-            ]
-            tBlttA_sBeq0 <- mat_guanrank[vect < tA & vecs == 0, "survival_rate"]
-            mat_guanrank[i, "rank"] = ifelse(
-                length(tBgetA_sBeq0) == 0,
-                0,
-                sum(1 - 0.5 * tBgetA_sBeq0 / rA)
-            ) +
-                ifelse(
-                    length(tBgetA_sBeq1) == 0,
-                    0,
-                    sum(1 - tBgetA_sBeq1 / rA)
-                ) +
-                ifelse(
-                    length(tBlttA_sBeq0) == 0,
-                    0,
-                    sum(0.5 * rA / tBlttA_sBeq0)
-                )
-        }
-    }
-    rank <- mat_guanrank[, "rank"]
-    # 0.5 is the correction for self-comparison
-    # normalization to [0,1]
-    mat_guanrank[, "rank"] <- (rank - 0.5) / max(rank)
-    if (!complete) {
-        mat_guanrank <- mat_guanrank[, c("time", "status", "rank")]
-    }
-
-    mat_guanrank
+    #  C++ func
+    guanrank_complete_cpp(mat_curve, complete = complete)
 }
 
 ## example:
