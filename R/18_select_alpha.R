@@ -245,11 +245,9 @@ SequentialEvaluate <- function(
                 total = cross_k
             )
         }
-        # 对每个CV fold评估当前参数
         for (cv_idx in seq_len(cross_k)) {
             cache <- cv_cache[[cv_idx]]
 
-            # 构建优化对象（使用缓存的模板）
             Object_cv <- c(
                 list(
                     X = cache$train_subset,
@@ -295,7 +293,7 @@ SequentialEvaluate <- function(
             new_W_df <- as.data.frame(new_W)
             colnames(new_W_df) <- paste0("V", seq_len(n_features))
 
-            pre_test <- predict(res.cox, newdata = new_W_df, type = "lp")
+            pre_test <- stats::predict(res.cox, newdata = new_W_df, type = "lp")
 
             cv_scores_matrix[param_idx, cv_idx] <- survival::concordance(
                 survival::Surv(
@@ -374,9 +372,8 @@ ParallelEvaluate <- function(
         test_idx <- cvlist[[cv_idx]]
         train_pheno <- train_phenotype[-test_idx, , drop = FALSE]
 
-        # 预计算S矩阵
         ss <- guanrank2(train_pheno[, c("time", "status")])
-        S_matrix <- diag(1 - ss[rownames(train_pheno), 3])
+        S_matrix <- Matrix::diag(1 - ss[rownames(train_pheno), 3])
 
         cv_cache[[cv_idx]] <- list(
             train_subset = train_data[-test_idx, , drop = FALSE],
@@ -384,7 +381,6 @@ ParallelEvaluate <- function(
             train_pheno = train_pheno,
             test_pheno = train_phenotype[test_idx, , drop = FALSE],
             S_matrix = S_matrix,
-            # 预构建Object模板
             Object_template = list(
                 phenotype = train_pheno,
                 A = fixed_matrices$A,
@@ -405,19 +401,14 @@ ParallelEvaluate <- function(
         para_1 <- param_grid$para_1[param_idx]
         para_2 <- param_grid$para_2[param_idx]
 
-        # 对每个CV fold评估
         cv_scores <- vapply(
             seq_len(cross_k),
             function(cv_idx) {
                 cache <- cv_cache[[cv_idx]]
 
-                Object_cv <- c(
-                    list(
-                        X = cache$train_subset,
-                        S = cache$S_matrix
-                    ),
-                    cache$Object_template
-                )
+                Object_cv <- cache$Object_template
+                Object_cv$X <- cache$train_subset
+                Object_cv$S <- cache$S_matrix
                 class(Object_cv) <- "scAB_data"
 
                 s_res <- scAB.optimized(
@@ -425,7 +416,7 @@ ParallelEvaluate <- function(
                     K = K,
                     alpha = para_1,
                     alpha_2 = para_2,
-                    maxiter = 2000
+                    maxiter = 2000L
                 )
 
                 ginvH <- SigBridgeRUtils::ginv2(s_res$H)
@@ -488,7 +479,13 @@ ParallelEvaluate <- function(
                 "Rcpp",
                 "scAB"
             ),
-            globals = c("cv_cache", "param_grid", "K", "method")
+            globals = list(
+                cv_cache = cv_cache,
+                K = K,
+                method = method,
+                cvlist = cvlist,
+                cross_k = cross_k
+            )
         )
     )
 
