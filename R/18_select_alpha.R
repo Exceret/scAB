@@ -238,7 +238,7 @@ SequentialEvaluate <- function(
         if (verbose) {
             cli::cli_progress_bar(
                 name = sprintf(
-                    'Alpha = %.2f, alpha_2 = %0.2f',
+                    'Alpha = %g, alpha_2 = %g',
                     para_1,
                     para_2
                 ),

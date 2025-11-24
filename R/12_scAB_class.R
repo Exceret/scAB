@@ -161,7 +161,7 @@ create_scAB.v5 <- function(
     degrees <- Matrix::rowSums(A)
     D <- Matrix::diag(degrees)
     eps <- 2.2204e-256 # In the original implementation of scAB, a custom-defined `eps` is used instead of `.Machine$double.eps`.
-    D12 <- Matrix::diag(1 / sqrt(pmax(degrees, eps)))
+    D12 <- Matrix::diag(1 / sqrt(pmax(degrees, eps))) # eps is used to replace 0
 
     L <- D12 %*% (D - A) %*% D12 # Normalized Graph Laplacian
     Dhat <- D12 %*% (D) %*% D12
