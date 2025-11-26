@@ -64,12 +64,12 @@ BEGIN_RCPP
 END_RCPP
 }
 // scAB_inner
-List scAB_inner(const arma::sp_mat& X, const arma::sp_mat& A, const arma::sp_mat& D, const arma::sp_mat& L, const arma::sp_mat& S, int K, double alpha, double alpha_2, int maxiter, double convergence_threshold);
+List scAB_inner(const arma::mat& X, const arma::sp_mat& A, const arma::sp_mat& D, const arma::sp_mat& L, const arma::sp_mat& S, int K, double alpha, double alpha_2, int maxiter, double convergence_threshold);
 RcppExport SEXP _scAB_scAB_inner(SEXP XSEXP, SEXP ASEXP, SEXP DSEXP, SEXP LSEXP, SEXP SSEXP, SEXP KSEXP, SEXP alphaSEXP, SEXP alpha_2SEXP, SEXP maxiterSEXP, SEXP convergence_thresholdSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const arma::sp_mat& >::type X(XSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type X(XSEXP);
     Rcpp::traits::input_parameter< const arma::sp_mat& >::type A(ASEXP);
     Rcpp::traits::input_parameter< const arma::sp_mat& >::type D(DSEXP);
     Rcpp::traits::input_parameter< const arma::sp_mat& >::type L(LSEXP);
@@ -83,6 +83,26 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// scAB_inner_wrapper
+List scAB_inner_wrapper(SEXP X_sexp, const arma::sp_mat& A, const arma::sp_mat& D, const arma::sp_mat& L, const arma::sp_mat& S, int K, double alpha, double alpha_2, int maxiter, double convergence_threshold);
+RcppExport SEXP _scAB_scAB_inner_wrapper(SEXP X_sexpSEXP, SEXP ASEXP, SEXP DSEXP, SEXP LSEXP, SEXP SSEXP, SEXP KSEXP, SEXP alphaSEXP, SEXP alpha_2SEXP, SEXP maxiterSEXP, SEXP convergence_thresholdSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type X_sexp(X_sexpSEXP);
+    Rcpp::traits::input_parameter< const arma::sp_mat& >::type A(ASEXP);
+    Rcpp::traits::input_parameter< const arma::sp_mat& >::type D(DSEXP);
+    Rcpp::traits::input_parameter< const arma::sp_mat& >::type L(LSEXP);
+    Rcpp::traits::input_parameter< const arma::sp_mat& >::type S(SSEXP);
+    Rcpp::traits::input_parameter< int >::type K(KSEXP);
+    Rcpp::traits::input_parameter< double >::type alpha(alphaSEXP);
+    Rcpp::traits::input_parameter< double >::type alpha_2(alpha_2SEXP);
+    Rcpp::traits::input_parameter< int >::type maxiter(maxiterSEXP);
+    Rcpp::traits::input_parameter< double >::type convergence_threshold(convergence_thresholdSEXP);
+    rcpp_result_gen = Rcpp::wrap(scAB_inner_wrapper(X_sexp, A, D, L, S, K, alpha, alpha_2, maxiter, convergence_threshold));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_scAB_guanrank_cpp", (DL_FUNC) &_scAB_guanrank_cpp, 1},
@@ -90,6 +110,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_scAB_NMF_optimized", (DL_FUNC) &_scAB_NMF_optimized, 4},
     {"_scAB_select_K_optimized", (DL_FUNC) &_scAB_select_K_optimized, 5},
     {"_scAB_scAB_inner", (DL_FUNC) &_scAB_scAB_inner, 10},
+    {"_scAB_scAB_inner_wrapper", (DL_FUNC) &_scAB_scAB_inner_wrapper, 10},
     {NULL, NULL, 0}
 };
 

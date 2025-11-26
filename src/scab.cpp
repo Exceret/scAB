@@ -168,9 +168,10 @@ List select_K_optimized(const arma::mat& X,
 }
 
 
+
 // [[Rcpp::export]]
 List scAB_inner(
-    const arma::sp_mat& X,
+    const arma::mat& X,  
     const arma::sp_mat& A,
     const arma::sp_mat& D,
     const arma::sp_mat& L,
@@ -187,33 +188,34 @@ List scAB_inner(
     const int nc = X.n_cols;
     
     // Initialize W and H with random uniform values
-    arma::mat W = arma::randu<arma::mat>(nr, K);
-    arma::mat H = arma::randu<arma::mat>(K, nc);
+    arma::mat W = arma::randu<arma::mat>(nr, K) * std::sqrt(arma::mean(arma::mean(X)) / K);
+    arma::mat H = arma::randu<arma::mat>(K, nc) * std::sqrt(arma::mean(arma::mean(X)) / K);
     
-    // Pre-compute S * S
+    // Pre-compute 
     arma::sp_mat SS = S * S;
-    
+    arma::mat A_mat = arma::mat(A);
+    arma::mat D_mat = arma::mat(D);
+    arma::mat L_mat = arma::mat(L);
+
+    arma::mat WtW(K, K);
+    arma::mat HHt(K, K);
+    arma::mat WtX(K, nc);
+    arma::mat X_Ht(nr, K);
+    arma::mat SW(nr, K);
+
     // Variables for convergence check
     double old_eucl = 0.0;
     double eucl_dist = 0.0;
     int final_iter = 0;
     
-    // Pre-compute matrices that don't change
-    arma::mat X_mat = arma::mat(X);
-    arma::mat A_mat = arma::mat(A);
-    arma::mat D_mat = arma::mat(D);
-    arma::mat L_mat = arma::mat(L);
-    
     // Loss function (inline computation)
     auto compute_loss = [&]() -> double {
-        arma::mat diff = X_mat - W * H;
-        double loss1 = arma::accu(diff % diff); // Frobenius norm squared
+        double loss1 = arma::accu(arma::square(X - W * H)); // Frobenius norm squared
         
         arma::mat SW = arma::mat(S * W);
-        double loss2 = alpha * arma::accu(SW % SW);
+        double loss2 = alpha * arma::accu(arma::square(SW));
         
-        arma::mat HL = H * arma::mat(L_mat);
-        double loss3 = alpha_2 * arma::accu(H % HL);
+        double loss3 = alpha_2 * arma::accu(H % (H * L_mat));
         
         return loss1 + loss2 + loss3;
     };
@@ -221,19 +223,18 @@ List scAB_inner(
     // Main iteration loop
     for (int iter = 1; iter <= maxiter; iter++) {
         // Update H
-        arma::mat WtX = W.t() * X_mat;
-        arma::mat HAt = H * A_mat.t();
-        arma::mat WtW_H = (W.t() * W) * H;
-        arma::mat HDt = H * D_mat.t();
+        WtW = W.t() * W;
+        WtX = W.t() * X;
+
+        H %= (WtX + alpha_2 * (H * A_mat.t())) / (WtW * H + alpha_2 * (H * D_mat.t()) + eps);
         
-        H = H % (WtX + alpha_2 * HAt) / (WtW_H + alpha_2 * HDt + eps);
-        
+        HHt = H * H.t();
         // Update W
-        arma::mat Pena = arma::mat(SS * W);
-        arma::mat X_Ht = X_mat * H.t();
+        SW = arma::mat(S * W);
+        X_Ht = X * H.t();
         arma::mat W_HHt = W * (H * H.t());
         
-        W = W % X_Ht / (W_HHt + alpha * Pena + eps);
+        W %= X_Ht / (W * HHt + alpha * (arma::mat(SS * W)) + eps);
         
         // Check convergence
         if (iter > 1) {
@@ -260,4 +261,23 @@ List scAB_inner(
         Named("iter") = final_iter,
         Named("loss") = old_eucl
     );
+}
+
+// Handle dgeMatrix
+// [[Rcpp::export]]
+List scAB_inner_wrapper(
+    SEXP X_sexp,              // Matrix of type dgeMatrix
+    const arma::sp_mat& A,
+    const arma::sp_mat& D,
+    const arma::sp_mat& L,
+    const arma::sp_mat& S,
+    int K,
+    double alpha = 0.005,
+    double alpha_2 = 0.005,
+    int maxiter = 2000,
+    double convergence_threshold = 1e-5
+) {
+    arma::mat X = Rcpp::as<arma::mat>(X_sexp);
+    
+    return scAB_inner(X, A, D, L, S, K, alpha, alpha_2, maxiter, convergence_threshold);
 }
