@@ -85,16 +85,16 @@
 #' @import methods
 #'
 setClass(
-    "scAB_data",
-    slots = list(
-        X = "matrix",
-        S = "matrix",
-        L = "matrix",
-        D = "matrix",
-        A = "matrix",
-        phenotype = "matrix",
-        method = "character"
-    )
+  "scAB_data",
+  slots = list(
+    X = "matrix",
+    S = "matrix",
+    L = "matrix",
+    D = "matrix",
+    A = "matrix",
+    phenotype = "matrix",
+    method = "character"
+  )
 )
 
 
@@ -117,115 +117,116 @@ setClass(
 #' @seealso [guanrank2()]
 #'
 create_scAB.v5 <- function(
-    Object,
-    bulk_dataset,
-    phenotype,
-    method = c("survival", "binary"),
-    verbose = SigBridgeRUtils::getFuncOption("verbose"),
-    ...
+  Object,
+  bulk_dataset,
+  phenotype,
+  method = c("survival", "binary"),
+  verbose = SigBridgeRUtils::getFuncOption("verbose"),
+  ...
 ) {
-    # cell neighbors
-    A <- if ("RNA_snn" %in% names(Object@graphs)) {
-        if (verbose) {
-            cli::cli_alert_info(
-                " Using {.val RNA_snn} graph for network."
-            )
-        }
-        Matrix::Matrix(SeuratObject::Graphs(
-            object = Object,
-            slot = "RNA_snn"
-        ))
-    } else if ("integrated_snn" %in% names(Object@graphs)) {
-        if (verbose) {
-            cli::cli_alert_info(
-                "Using {.val integrated_snn} graph for network."
-            )
-        }
-        Matrix::Matrix(SeuratObject::Graphs(
-            object = Object,
-            slot = "integrated_snn"
-        ))
-    } else {
-        cli::cli_abort(c(
-            "x" = "No `RNA_snn` or `integrated_snn` graph in the given Seurat object. Please check `Object@graphs`."
-        ))
-    }
+  # cell neighbors
+  A <- if ("RNA_snn" %in% names(Object@graphs)) {
     if (verbose) {
-        ts_cli$cli_alert_info(
-            "Calculating L, D and A"
-        )
+      cli::cli_alert_info(
+        " Using {.val RNA_snn} graph for network."
+      )
     }
-
-    Matrix::diag(A) <- 0
-    A@x[which(A@x != 0)] <- 1
-    degrees <- Matrix::rowSums(A)
-    D <- Matrix::diag(degrees)
-    eps <- 2.2204e-256 # In the original implementation of scAB, a custom-defined `eps` is used instead of `.Machine$double.eps`.
-    D12 <- Matrix::diag(1 / sqrt(pmax(degrees, eps)))
-
-    L <- D12 %*% (D - A) %*% D12 # Normalized Graph Laplacian
-    Dhat <- D12 %*% (D) %*% D12
-    Ahat <- D12 %*% (A) %*% D12
-
-    # similarity matrix
-    sc_exprs <- Matrix::Matrix(SeuratObject::LayerData(Object))
-    common <- intersect(rownames(bulk_dataset), rownames(sc_exprs))
-
-    bulk_mat <- Matrix::Matrix(as.matrix(bulk_dataset[common, ]))
-
-    dataset0 <- Matrix::cbind2(bulk_mat, sc_exprs[common, ]) # Dataset before quantile normalization.
-
+    Matrix::Matrix(SeuratObject::Graphs(
+      object = Object,
+      slot = "RNA_snn"
+    ))
+  } else if ("integrated_snn" %in% names(Object@graphs)) {
     if (verbose) {
-        ts_cli$cli_alert_info(
-            "Normalizing quantiles of data"
-        )
+      cli::cli_alert_info(
+        "Using {.val integrated_snn} graph for network."
+      )
     }
-
-    dataset1 <- SigBridgeRUtils::normalize.quantiles(as.matrix(dataset0)) # Dataset after quantile normalization.
-
-    rownames(dataset1) <- common
-    colnames(dataset1) <- colnames(dataset0)
-
-    ncol_bulk <- ncol(bulk_dataset)
-
-    Expression_bulk <- dataset1[, seq_len(ncol_bulk)]
-    Expression_cell <- dataset1[, (ncol_bulk + 1):ncol(dataset1)]
-
-    rm(dataset0, dataset1, bulk_mat, sc_exprs, degrees, eps, common)
-    gc(verbose = FALSE)
-    if (verbose) {
-        ts_cli$cli_alert_info(
-            "Calculating correlation"
-        )
-    }
-
-    X <- stats::cor(Expression_bulk, Expression_cell)
-    X <- X / Matrix::norm(X, "F")
-
-    if (verbose) {
-        ts_cli$cli_alert_info(
-            "Guanranking"
-        )
-    }
-
-    # phenotype ranking
-    if (method == "survival") {
-        ss <- guanrank2(phenotype[, c("time", "status")])
-        S <- Matrix::diag(1 - ss[rownames(phenotype), 3]) # 3 is the rank column
-    } else {
-        S <- Matrix::diag(1 - phenotype)
-    }
-    # return
-    obj <- list(
-        X = Matrix::Matrix(X, sparse = TRUE),
-        S = Matrix::Matrix(S, sparse = TRUE),
-        L = Matrix::Matrix(L, sparse = TRUE),
-        D = Matrix::Matrix(Dhat, sparse = TRUE),
-        A = Matrix::Matrix(Ahat, sparse = TRUE),
-        phenotype = phenotype,
-        method = method
+    Matrix::Matrix(SeuratObject::Graphs(
+      object = Object,
+      slot = "integrated_snn"
+    ))
+  } else {
+    cli::cli_abort(c(
+      "x" = "No `RNA_snn` or `integrated_snn` graph in the given Seurat object. Please check `Object@graphs`."
+    ))
+  }
+  if (verbose) {
+    ts_cli$cli_alert_info(
+      "Calculating L, D and A"
     )
-    class(obj) <- "scAB_data"
+  }
 
-    obj
+  Matrix::diag(A) <- 0
+  A@x[which(A@x != 0)] <- 1
+  degrees <- Matrix::rowSums(A)
+  D <- Matrix::diag(degrees)
+  eps <- 2.2204e-256 # In the original implementation of scAB, a custom-defined `eps` is used instead of `.Machine$double.eps`.
+  D12 <- Matrix::diag(1 / sqrt(pmax(degrees, eps)))
+
+  L <- D12 %*% (D - A) %*% D12 # Normalized Graph Laplacian
+  Dhat <- D12 %*% (D) %*% D12
+  Ahat <- D12 %*% (A) %*% D12
+  rm(D12)
+
+  # similarity matrix
+  sc_exprs <- Matrix::Matrix(SeuratObject::LayerData(Object))
+  common <- intersect(rownames(bulk_dataset), rownames(sc_exprs))
+
+  bulk_mat <- Matrix::Matrix(as.matrix(bulk_dataset[common, ]))
+
+  dataset0 <- Matrix::cbind2(bulk_mat, sc_exprs[common, ]) # Dataset before quantile normalization.
+
+  if (verbose) {
+    ts_cli$cli_alert_info(
+      "Normalizing quantiles of data"
+    )
+  }
+
+  dataset1 <- SigBridgeRUtils::normalize.quantiles(as.matrix(dataset0)) # Dataset after quantile normalization.
+
+  rownames(dataset1) <- common
+  colnames(dataset1) <- colnames(dataset0)
+
+  ncol_bulk <- ncol(bulk_dataset)
+
+  Expression_bulk <- dataset1[, seq_len(ncol_bulk)]
+  Expression_cell <- dataset1[, (ncol_bulk + 1):ncol(dataset1)]
+
+  rm(dataset0, dataset1, bulk_mat, sc_exprs, degrees, eps, common)
+  gc(verbose = FALSE)
+  if (verbose) {
+    ts_cli$cli_alert_info(
+      "Calculating correlation"
+    )
+  }
+
+  X <- stats::cor(Expression_bulk, Expression_cell)
+  X <- X / Matrix::norm(X, "F")
+
+  if (verbose) {
+    ts_cli$cli_alert_info(
+      "Guanranking"
+    )
+  }
+
+  # phenotype ranking
+  if (method == "survival") {
+    ss <- guanrank2(phenotype[, c("time", "status")])
+    S <- Matrix::diag(1 - ss[rownames(phenotype), 3]) # 3 is the rank column
+  } else {
+    S <- Matrix::diag(1 - phenotype)
+  }
+  # return
+  obj <- list(
+    X = Matrix::Matrix(X, sparse = TRUE),
+    S = Matrix::Matrix(S, sparse = TRUE),
+    L = Matrix::Matrix(L, sparse = TRUE),
+    D = Matrix::Matrix(Dhat, sparse = TRUE),
+    A = Matrix::Matrix(Ahat, sparse = TRUE),
+    phenotype = phenotype,
+    method = method
+  )
+  class(obj) <- "scAB_data"
+
+  obj
 }

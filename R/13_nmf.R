@@ -1,7 +1,7 @@
 #' @title Non-negative Matrix Factorization from scAB
 #'
 #' @description
-#' An R implementation of classical non-negative matrix factorization (NMF).
+#' A C++ implementation of classical non-negative matrix factorization (NMF).
 #'
 #' @param Object a scAB_data object or a data matrix
 #' @param K The rank of factorization, i.e., the number of components/latent
@@ -33,7 +33,7 @@
 #' @family scAB
 #'
 NMF.optimized <- function(Object, K, maxiter = 2000L, tol = 1e-5) {
-    X = if (inherits(Object, "scAB_data")) Object$X else Object
-    # Cpp Func
-    NMF_optimized(X = as.matrix(X), K = K, maxiter = maxiter, tol = tol)
+  X = if (inherits(Object, "scAB_data")) Object$X else Object
+  # Cpp Func
+  NMF_optimized(X = as.matrix(X), K = K, maxiter = maxiter, tol = tol)
 }
