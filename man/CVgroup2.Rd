@@ -4,7 +4,7 @@
 \alias{CVgroup2}
 \title{Create subsets of cross-validation}
 \usage{
-CVgroup2(k, datasize, seed = 0)
+CVgroup2(k, datasize, seed = SigBridgeRUtils::getFuncOption("seed"))
 }
 \arguments{
 \item{k}{k-fold cross validation}

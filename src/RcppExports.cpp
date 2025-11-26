@@ -11,6 +11,29 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
+// guanrank_cpp
+NumericVector guanrank_cpp(NumericMatrix mat_curve);
+RcppExport SEXP _scAB_guanrank_cpp(SEXP mat_curveSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericMatrix >::type mat_curve(mat_curveSEXP);
+    rcpp_result_gen = Rcpp::wrap(guanrank_cpp(mat_curve));
+    return rcpp_result_gen;
+END_RCPP
+}
+// guanrank_complete_cpp
+NumericMatrix guanrank_complete_cpp(NumericMatrix mat, bool complete);
+RcppExport SEXP _scAB_guanrank_complete_cpp(SEXP matSEXP, SEXP completeSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericMatrix >::type mat(matSEXP);
+    Rcpp::traits::input_parameter< bool >::type complete(completeSEXP);
+    rcpp_result_gen = Rcpp::wrap(guanrank_complete_cpp(mat, complete));
+    return rcpp_result_gen;
+END_RCPP
+}
 // NMF_optimized
 Rcpp::List NMF_optimized(const arma::mat& X, int K, int maxiter, double tol);
 RcppExport SEXP _scAB_NMF_optimized(SEXP XSEXP, SEXP KSEXP, SEXP maxiterSEXP, SEXP tolSEXP) {
@@ -62,6 +85,8 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_scAB_guanrank_cpp", (DL_FUNC) &_scAB_guanrank_cpp, 1},
+    {"_scAB_guanrank_complete_cpp", (DL_FUNC) &_scAB_guanrank_complete_cpp, 2},
     {"_scAB_NMF_optimized", (DL_FUNC) &_scAB_NMF_optimized, 4},
     {"_scAB_select_K_optimized", (DL_FUNC) &_scAB_select_K_optimized, 5},
     {"_scAB_scAB_inner", (DL_FUNC) &_scAB_scAB_inner, 10},

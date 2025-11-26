@@ -13,7 +13,11 @@
 #' }
 #'
 #'
-CVgroup2 <- function(k, datasize, seed = 0) {
+CVgroup2 <- function(
+    k,
+    datasize,
+    seed = SigBridgeRUtils::getFuncOption("seed")
+) {
     set.seed(seed)
     folds <- sample(rep_len(seq_len(k), datasize))
     split(seq_len(datasize), folds)

@@ -9,19 +9,26 @@
 #' @export
 #'
 findModule <- function(H, tred = 2, do.dip = FALSE) {
-    K = dim(H)[1]
-    I = length(H)
-    module = list()
-    meanH = rowMeans(H)
-    sdH = apply(H, 1, stats::sd)
-    for (i in 1:K) {
+    K <- nrow(H)
+    meanH <- rowMeans(H)
+    sdH <- SigBridgeRUtils::rowSds(H)
+
+    if (!do.dip) {
+        threshold_matrix <- H - meanH > tred * sdH
+        module <- apply(threshold_matrix, 1, which, simplify = FALSE)
+        return(module)
+    }
+
+    module <- vector("list", K)
+    for (i in seq_len(K)) {
         x <- H[i, ]
-        if (do.dip && diptest::dip.test(x)$p.value < 0.05) {
+        if (diptest::dip.test(x)$p.value < 0.05) {
             modes <- multimode::locmodes(x, mod0 = 2)
-            module = c(module, list(which(x > modes$locations[2])))
+            module[[i]] <- which(x > modes$locations[2])
         } else {
-            module = c(module, list(which(H[i, ] - meanH[i] > tred * sdH[i])))
+            module[[i]] <- which(x - meanH[i] > tred * sdH[i])
         }
     }
-    return(module)
+
+    module
 }
