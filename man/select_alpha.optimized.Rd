@@ -6,7 +6,7 @@
 \usage{
 select_alpha.optimized(
   Object,
-  method = c("binary", "survival"),
+  method = Object$method \%||\% c("binary", "survival"),
   K,
   cross_k = 5,
   para_1_list = c(0.01, 0.005, 0.001),

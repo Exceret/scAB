@@ -22,6 +22,8 @@ Imports:
     SeuratObject,
     SigBridgeRUtils,
     methods
+Remotes:
+    github::WangLabCSU/SigBridgeRUtils
 RoxygenNote: 7.3.3
 NeedsCompilation: no
 Packaged: 2022-04-18 01:11:46 UTC; MSI-NB
