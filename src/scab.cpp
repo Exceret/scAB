@@ -171,7 +171,7 @@ List select_K_optimized(const arma::mat& X,
 
 // [[Rcpp::export]]
 List scAB_inner(
-    const arma::mat& X,  
+    const arma::sp_mat& X,  
     const arma::sp_mat& A,
     const arma::sp_mat& D,
     const arma::sp_mat& L,
@@ -261,23 +261,4 @@ List scAB_inner(
         Named("iter") = final_iter,
         Named("loss") = old_eucl
     );
-}
-
-// Handle dgeMatrix
-// [[Rcpp::export]]
-List scAB_inner_wrapper(
-    SEXP X_sexp,              // Matrix of type dgeMatrix
-    const arma::sp_mat& A,
-    const arma::sp_mat& D,
-    const arma::sp_mat& L,
-    const arma::sp_mat& S,
-    int K,
-    double alpha = 0.005,
-    double alpha_2 = 0.005,
-    int maxiter = 2000,
-    double convergence_threshold = 1e-5
-) {
-    arma::mat X = Rcpp::as<arma::mat>(X_sexp);
-    
-    return scAB_inner(X, A, D, L, S, K, alpha, alpha_2, maxiter, convergence_threshold);
 }

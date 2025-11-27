@@ -28,8 +28,8 @@ scAB.optimized <- function(
     set.seed(seed)
   }
   # Cpp func
-  result <- scAB_inner_wrapper(
-    X = Matrix::Matrix(Object$X), # dense matrix
+  result <- scAB_inner(
+    X = Matrix::Matrix(Object$X, sparse = TRUE),
     A = Matrix::Matrix(Object$A, sparse = TRUE),
     D = Matrix::Matrix(Object$D, sparse = TRUE),
     L = Matrix::Matrix(Object$L, sparse = TRUE),

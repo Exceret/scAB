@@ -39,7 +39,3 @@ scAB_inner <- function(X, A, D, L, S, K, alpha = 0.005, alpha_2 = 0.005, maxiter
     .Call('_scAB_scAB_inner', PACKAGE = 'scAB', X, A, D, L, S, K, alpha, alpha_2, maxiter, convergence_threshold)
 }
 
-scAB_inner_wrapper <- function(X_sexp, A, D, L, S, K, alpha = 0.005, alpha_2 = 0.005, maxiter = 2000L, convergence_threshold = 1e-5) {
-    .Call('_scAB_scAB_inner_wrapper', PACKAGE = 'scAB', X_sexp, A, D, L, S, K, alpha, alpha_2, maxiter, convergence_threshold)
-}
-

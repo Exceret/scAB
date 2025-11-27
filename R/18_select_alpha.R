@@ -55,7 +55,7 @@
 #'
 select_alpha.optimized <- function(
   Object,
-  method = c("binary", "survival"),
+  method = Object$method %||% c("binary", "survival"),
   K,
   cross_k = 5,
   para_1_list = c(0.01, 0.005, 0.001),
@@ -377,7 +377,7 @@ ParallelEvaluate <- function(
     S_matrix <- Matrix::diag(1 - ss[rownames(train_pheno), 3])
 
     cv_cache[[cv_idx]] <- list(
-      train_subset = -test_idx,
+      train_subset = -test_idx, # use indices now instead of subset
       test_subset = test_idx,
       train_pheno = train_pheno,
       test_pheno = train_phenotype[test_idx, , drop = FALSE],
@@ -411,7 +411,7 @@ ParallelEvaluate <- function(
         Object_cv$X <- train_data[cache$train_subset, , drop = FALSE]
         Object_cv$S <- cache$S_matrix
         class(Object_cv) <- "scAB_data"
-
+        # most of the time, this is the bottleneck
         s_res <- scAB.optimized(
           Object = Object_cv,
           K = K,
