@@ -16,32 +16,32 @@
 #'
 #'
 scAB.optimized <- function(
-    Object,
-    K,
-    alpha = 0.005,
-    alpha_2 = 0.005,
-    maxiter = 2000L,
-    convergence_threshold = 1e-5
+  Object,
+  K,
+  alpha = 0.005,
+  alpha_2 = 0.005,
+  maxiter = 2000L,
+  convergence_threshold = 1e-5
 ) {
-    seed <- ifelse(Object$method == "survival", 7L, 5L)
-    if (Object$method != "") {
-        set.seed(seed)
-    }
-    # Cpp func
-    result <- scAB_inner(
-        X = Matrix::Matrix(Object$X, sparse = TRUE),
-        A = Matrix::Matrix(Object$A, sparse = TRUE),
-        D = Matrix::Matrix(Object$D, sparse = TRUE),
-        L = Matrix::Matrix(Object$L, sparse = TRUE),
-        S = Matrix::Matrix(Object$S, sparse = TRUE),
-        K = K,
-        alpha = alpha,
-        alpha_2 = alpha_2,
-        maxiter = maxiter,
-        convergence_threshold = convergence_threshold
-    )
+  seed <- ifelse(Object$method == "survival", 7L, 5L)
+  if (Object$method != "") {
+    set.seed(seed)
+  }
+  # Cpp func
+  result <- scAB_inner(
+    X = Matrix::Matrix(Object$X, sparse = TRUE),
+    A = Matrix::Matrix(Object$A, sparse = TRUE),
+    D = Matrix::Matrix(Object$D, sparse = TRUE),
+    L = Matrix::Matrix(Object$L, sparse = TRUE),
+    S = Matrix::Matrix(Object$S, sparse = TRUE),
+    K = K,
+    alpha = alpha,
+    alpha_2 = alpha_2,
+    maxiter = maxiter,
+    convergence_threshold = convergence_threshold
+  )
 
-    result$method <- Object$method
+  result$method <- Object$method
 
-    result
+  result
 }
