@@ -49,8 +49,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // select_K_optimized
-List select_K_optimized(const arma::mat& X, int K_max, int repeat_times, int maxiter, bool verbose);
-RcppExport SEXP _scAB_select_K_optimized(SEXP XSEXP, SEXP K_maxSEXP, SEXP repeat_timesSEXP, SEXP maxiterSEXP, SEXP verboseSEXP) {
+List select_K_optimized(const arma::mat& X, int K_max, int repeat_times, int maxiter, bool verbose, int n_threads);
+RcppExport SEXP _scAB_select_K_optimized(SEXP XSEXP, SEXP K_maxSEXP, SEXP repeat_timesSEXP, SEXP maxiterSEXP, SEXP verboseSEXP, SEXP n_threadsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -59,7 +59,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< int >::type repeat_times(repeat_timesSEXP);
     Rcpp::traits::input_parameter< int >::type maxiter(maxiterSEXP);
     Rcpp::traits::input_parameter< bool >::type verbose(verboseSEXP);
-    rcpp_result_gen = Rcpp::wrap(select_K_optimized(X, K_max, repeat_times, maxiter, verbose));
+    Rcpp::traits::input_parameter< int >::type n_threads(n_threadsSEXP);
+    rcpp_result_gen = Rcpp::wrap(select_K_optimized(X, K_max, repeat_times, maxiter, verbose, n_threads));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -88,7 +89,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_scAB_guanrank_cpp", (DL_FUNC) &_scAB_guanrank_cpp, 1},
     {"_scAB_guanrank_complete_cpp", (DL_FUNC) &_scAB_guanrank_complete_cpp, 2},
     {"_scAB_NMF_optimized", (DL_FUNC) &_scAB_NMF_optimized, 4},
-    {"_scAB_select_K_optimized", (DL_FUNC) &_scAB_select_K_optimized, 5},
+    {"_scAB_select_K_optimized", (DL_FUNC) &_scAB_select_K_optimized, 6},
     {"_scAB_scAB_inner", (DL_FUNC) &_scAB_scAB_inner, 10},
     {NULL, NULL, 0}
 };
