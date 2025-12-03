@@ -9,7 +9,7 @@ create_scAB.v5(
   bulk_dataset,
   phenotype,
   method = c("survival", "binary"),
-  verbose = SigBridgeRUtils::getFuncOption("verbose"),
+  verbose = SigBridgeRUtils::getFuncOption("verbose") \%||\% TRUE,
   ...
 )
 }
@@ -18,7 +18,8 @@ create_scAB.v5(
 
 \item{bulk_dataset}{matrix of bulk data}
 
-\item{phenotype}{Phenotype data, a matrix with two columns "time" and "state", or a vector}
+\item{phenotype}{Phenotype data, a matrix with
+two columns "time" and "state", or a vector}
 
 \item{method}{method "survival" or "binary"}
 

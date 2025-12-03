@@ -1,7 +1,5 @@
 // [[Rcpp::depends(RcppArmadillo)]]
-// [[Rcpp::plugins(openmp)]]
 #include <RcppArmadillo.h>
-#include <omp.h>
 using namespace Rcpp;
 using namespace arma;
 
@@ -75,41 +73,33 @@ Rcpp::List NMF_optimized(const arma::mat &X, int K, int maxiter = 2000,
 // [[Rcpp::export]]
 List select_K_optimized(const arma::mat &X, int K_max = 20,
                         int repeat_times = 10, int maxiter = 2000,
-                        bool verbose = true, int n_threads = 4) {
-
-  if (n_threads > 1) {
-    omp_set_num_threads(n_threads);
-  }
+                        bool verbose = true) {
 
   // K values to test: 2 to K_max
   int n_K = K_max - 1; // Number of K values (2, 3, ..., K_max)
 
   // Matrix to store reconstruction losses for each K and repeat
   arma::mat dist_K(n_K, repeat_times);
-  dist_K.fill(datum::nan);
+  dist_K.fill(arma::datum::nan);
   // Vectors for statistics
   arma::vec eii(n_K);
-  eii.fill(datum::nan); // 初始化为NA
+  eii.fill(arma::datum::nan); // 初始化为NA
   arma::vec row_means(n_K);
-  row_means.fill(datum::nan); // 初始化为NA
+  row_means.fill(arma::datum::nan); // 初始化为NA
 
   int optimal_K = 2;
   bool found_optimal = false;
-
-  int n = X.n_rows;
-  int m = X.n_cols;
 
   // Main loop over K values
   for (int Ki = 2; Ki <= K_max; Ki++) {
     int Ki_idx = Ki - 2; // 转换为0-based索引: K=2 -> idx=0, K=3 -> idx=1, etc.
 
-#pragma omp parallel for if (n_threads > 1 && m * n > 5000)
     // Run NMF multiple times with different initializations
     for (int Kj = 0; Kj < repeat_times; Kj++) {
       List res_ij = NMF_optimized(X, Ki, maxiter, 1e-5);
 
-      arma::mat W = as<arma::mat>(res_ij["W"]);
-      arma::mat H = as<arma::mat>(res_ij["H"]);
+      arma::mat W = Rcpp::as<arma::mat>(res_ij["W"]);
+      arma::mat H = Rcpp::as<arma::mat>(res_ij["H"]);
 
       // Compute reconstruction error: ||X - WH||_F^2
       arma::mat diff_matrix = X - W * H;
@@ -135,11 +125,7 @@ List select_K_optimized(const arma::mat &X, int K_max = 20,
     double denominator = row_means(0) - current_loss; // row_means(0)对应K=2
 
     // Check for valid denominator
-    if (std::abs(denominator) < 1e-10 || !arma::is_finite(denominator)) {
-      eii(Ki_idx) = 0.0;
-    } else {
-      eii(Ki_idx) = numerator / denominator;
-    }
+    eii(Ki_idx) = numerator / denominator;
 
     // Check stopping criteria
     if (numerator <= 0) {
@@ -164,7 +150,7 @@ List select_K_optimized(const arma::mat &X, int K_max = 20,
   }
 
   // Create K_all vector for output consistency
-  vec K_all_vec = arma::regspace(2, K_max);
+  arma::vec K_all_vec = arma::regspace(2, K_max);
 
   // Return results
   return List::create(Named("K") = optimal_K, Named("eii") = eii,
@@ -177,14 +163,27 @@ double compute_loss(const arma::sp_mat &X, const arma::mat &W,
                     const arma::sp_mat &L, double alpha, double alpha_2) {
   // Loss 1: ||X - W*H||_F^2
   const arma::mat WH = W * H;
-  const arma::sp_mat X_WH_sparse = arma::conv_to<arma::sp_mat>::from(X - WH);
-  double loss1 = arma::norm(X_WH_sparse, "fro"); // Use norm directly
-  loss1 *= loss1;
+  // ||X - WH||_F^2 = ||X||_F^2 + ||WH||_F^2 - 2*trace(X' * WH)
+  double x_norm_sq = arma::norm(X, "fro");
+  x_norm_sq *= x_norm_sq;
+
+  double wh_norm_sq = arma::norm(WH, "fro");
+  wh_norm_sq *= wh_norm_sq;
+
+  // trace(X' * WH) = sum(X .* WH)
+  double trace_term = 0.0;
+  arma::sp_mat::const_iterator it = X.begin();
+  arma::sp_mat::const_iterator it_end = X.end();
+  for (; it != it_end; ++it) {
+    trace_term += (*it) * WH(it.row(), it.col());
+  }
+
+  double loss1 = x_norm_sq + wh_norm_sq - 2.0 * trace_term;
 
   // Loss 2: alpha * ||S * W||_F^2
-  const arma::mat SW = S * W;                   // nr x K
-  double loss2 = alpha * arma::norm(SW, "fro"); // Use norm directly
-  loss2 *= loss2;
+  const arma::mat SW = S * W; // nr x K
+  double loss2_norm = arma::norm(SW, "fro");
+  double loss2 = alpha * loss2_norm * loss2_norm;
 
   // Loss 3: alpha_2 * sum(H .* (H * L))
   // H * L is K x nc (dense * sparse)
@@ -208,25 +207,15 @@ List scAB_inner(const arma::sp_mat &X, const arma::sp_mat &A,
   const int nc = X.n_cols;
 
   // Initialize W and H with random uniform values
-  arma::mat W =
-      arma::randu<arma::mat>(nr, K) * std::sqrt(arma::mean(arma::mean(X)) / K);
-  arma::mat H =
-      arma::randu<arma::mat>(K, nc) * std::sqrt(arma::mean(arma::mean(X)) / K);
+  arma::mat W = arma::randu<arma::mat>(nr, K);
+  arma::mat H = arma::randu<arma::mat>(K, nc);
 
   // Pre-compute
   arma::sp_mat SS = S * S;
   // arma::mat A_mat = arma::mat(A);
   // arma::mat D_mat = arma::mat(D);
   // arma::mat L_mat = arma::mat(L);
-  arma::mat WtW(K, K, arma::fill::zeros);
-  arma::mat HHt(K, K, arma::fill::zeros);
-  arma::mat WtX(K, nc, arma::fill::zeros);
-  arma::mat XHt(nr, K, arma::fill::zeros);
-  arma::mat SW(nr, K, arma::fill::zeros);
-  arma::mat WHHt(nr, K, arma::fill::zeros);
-  arma::mat SSW(nr, K, arma::fill::zeros);
-  arma::mat HAt(K, nc, arma::fill::zeros);
-  arma::mat HDt(K, nc, arma::fill::zeros);
+  arma::mat WtW, HHt, WtX, XHt, SW, WHHt, SSW, HAt, HDt;
 
   // Variables for convergence check
   double old_eucl = 0.0;
@@ -277,6 +266,7 @@ List scAB_inner(const arma::sp_mat &X, const arma::sp_mat &A,
   }
 
   // Return results as a list
-  return List::create(Named("W") = W, Named("H") = H,
-                      Named("iter") = final_iter, Named("loss") = old_eucl);
+  return Rcpp::List::create(Rcpp::Named("W") = W, Rcpp::Named("H") = H,
+                            Rcpp::Named("iter") = final_iter,
+                            Rcpp::Named("loss") = old_eucl);
 }

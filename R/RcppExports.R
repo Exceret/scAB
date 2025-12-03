@@ -13,8 +13,8 @@ NMF_optimized <- function(X, K, maxiter = 2000L, tol = 1e-5) {
     .Call('_scAB_NMF_optimized', PACKAGE = 'scAB', X, K, maxiter, tol)
 }
 
-select_K_optimized <- function(X, K_max = 20L, repeat_times = 10L, maxiter = 2000L, verbose = TRUE, n_threads = 4L) {
-    .Call('_scAB_select_K_optimized', PACKAGE = 'scAB', X, K_max, repeat_times, maxiter, verbose, n_threads)
+select_K_optimized <- function(X, K_max = 20L, repeat_times = 10L, maxiter = 2000L, verbose = TRUE) {
+    .Call('_scAB_select_K_optimized', PACKAGE = 'scAB', X, K_max, repeat_times, maxiter, verbose)
 }
 
 scAB_inner <- function(X, A, D, L, S, K, alpha = 0.005, alpha_2 = 0.005, maxiter = 2000L, convergence_threshold = 1e-5) {
