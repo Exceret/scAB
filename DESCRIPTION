@@ -20,7 +20,7 @@ Imports:
     Matrix,
     stats,
     SeuratObject,
-    SigBridgeRUtils,
+    SigBridgeRUtils (>= 0.1.0),
     methods
 Remotes:
     github::WangLabCSU/SigBridgeRUtils

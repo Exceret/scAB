@@ -11,7 +11,7 @@
 findModule <- function(H, tred = 2, do.dip = FALSE) {
     K <- nrow(H)
     meanH <- rowMeans(H)
-    sdH <- SigBridgeRUtils::rowSds(H)
+    sdH <- SigBridgeRUtils::rowSds3(H)
 
     if (!do.dip) {
         threshold_matrix <- H - meanH > tred * sdH
