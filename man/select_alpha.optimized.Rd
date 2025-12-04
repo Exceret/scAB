@@ -11,10 +11,10 @@ select_alpha.optimized(
   cross_k = 5,
   para_1_list = c(0.01, 0.005, 0.001),
   para_2_list = c(0.01, 0.005, 0.001),
-  seed = SigBridgeRUtils::getFuncOption("seed"),
-  parallel = SigBridgeRUtils::getFuncOption("parallel"),
-  workers = SigBridgeRUtils::getFuncOption("workers"),
-  verbose = SigBridgeRUtils::getFuncOption("verbose")
+  seed = SigBridgeRUtils::getFuncOption("seed") \%||\% 123L,
+  parallel = SigBridgeRUtils::getFuncOption("parallel") \%||\% FALSE,
+  workers = SigBridgeRUtils::getFuncOption("workers") \%||\% 4L,
+  verbose = SigBridgeRUtils::getFuncOption("verbose") \%||\% TRUE
 )
 }
 \arguments{

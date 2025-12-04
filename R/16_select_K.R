@@ -6,7 +6,8 @@
 #' multiple candidate ranks and selects the one that provides the best
 #' trade-off between model complexity and reconstruction accuracy.
 #'
-#' @param Object A scAB_data object containing the data matrix to be factorized.
+#' @param Object A scAB_data object containing
+#'    the data matrix (X) to be factorized.
 #' @param K_max The maximum rank value to consider in the search. Must be at
 #'              least 2. Defaults to 20.
 #' @param repeat_times The number of repeated NMF runs for each candidate rank
@@ -17,6 +18,7 @@
 #' @param seed Random seed for reproducible results. Defaults to 0.
 #' @param verbose Logical indicating whether to print progress messages and
 #'                intermediate results. Defaults to FALSE.
+#' @param ... No additional arguments are used.
 #'
 #' @return An integer value representing the selected optimal rank K.
 #'
@@ -29,21 +31,33 @@
 #' @seealso [NMF.optimized()]
 #'
 select_K.optimized <- function(
-    Object,
-    K_max = 20L,
-    repeat_times = 10L,
-    maxiter = 2000L,
-    seed = SigBridgeRUtils::getFuncOption("seed"),
-    verbose = SigBridgeRUtils::getFuncOption("verbose")
+  Object,
+  K_max = 20L,
+  repeat_times = 10L,
+  maxiter = 2000L,
+  seed = SigBridgeRUtils::getFuncOption("seed") %||% 123L,
+  verbose = SigBridgeRUtils::getFuncOption("verbose") %||% FALSE,
+  ...
 ) {
-    set.seed(seed)
-    # Cpp func
-    res <- select_K_optimized(
-        X = as.matrix(Object$X),
-        K_max = K_max,
-        repeat_times = repeat_times,
-        maxiter = maxiter,
-        verbose = verbose
-    )
-    res$K
+  stopifnot(
+    is.numeric(K_max),
+    K_max >= 2L,
+    is.numeric(repeat_times),
+    repeat_times >= 1L,
+    is.numeric(maxiter),
+    maxiter >= 1L,
+    is.numeric(seed),
+    is.logical(verbose)
+  )
+
+  set.seed(seed)
+  # Cpp func
+  res <- select_K_optimized(
+    X = as.matrix(Object$X),
+    K_max = K_max,
+    repeat_times = repeat_times,
+    maxiter = maxiter,
+    verbose = verbose
+  )
+  res$K
 }

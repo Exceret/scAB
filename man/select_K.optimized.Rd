@@ -9,12 +9,14 @@ select_K.optimized(
   K_max = 20L,
   repeat_times = 10L,
   maxiter = 2000L,
-  seed = SigBridgeRUtils::getFuncOption("seed"),
-  verbose = SigBridgeRUtils::getFuncOption("verbose")
+  seed = SigBridgeRUtils::getFuncOption("seed") \%||\% 123L,
+  verbose = SigBridgeRUtils::getFuncOption("verbose") \%||\% FALSE,
+  ...
 )
 }
 \arguments{
-\item{Object}{A scAB_data object containing the data matrix to be factorized.}
+\item{Object}{A scAB_data object containing
+the data matrix (X) to be factorized.}
 
 \item{K_max}{The maximum rank value to consider in the search. Must be at
 least 2. Defaults to 20.}
@@ -30,6 +32,8 @@ Defaults to 2000.}
 
 \item{verbose}{Logical indicating whether to print progress messages and
 intermediate results. Defaults to FALSE.}
+
+\item{...}{No additional arguments are used.}
 }
 \value{
 An integer value representing the selected optimal rank K.

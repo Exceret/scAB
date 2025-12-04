@@ -33,7 +33,7 @@ A list containing the factorization results:
 }
 }
 \description{
-An R implementation of classical non-negative matrix factorization (NMF).
+A C++ implementation of classical non-negative matrix factorization (NMF).
 }
 \seealso{
 This function is from scAB package, and it is not recommended to use it because the computational efficiency of the R language is not very high.
