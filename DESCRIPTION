@@ -30,6 +30,7 @@ Packaged: 2022-04-18 01:11:46 UTC; MSI-NB
 Suggests: 
     dplyr,
     furrr,
+    future,
     matrixStats,
     pak,
     preprocessCore,
