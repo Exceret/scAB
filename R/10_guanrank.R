@@ -201,7 +201,7 @@ guanrank2 <- function(mat, complete = FALSE) {
 }
 
 ## example:
-#tbl=data.frame(time=c(430,257,185,298,506),status=c(0,1,0,1,0))
-#rownames(tbl)=paste0("patient",1:5)
-#guanrank(tbl)
-#guanrank_elf(tbl)
+# tbl=data.frame(time=c(430,257,185,298,506),status=c(0,1,0,1,0))
+# rownames(tbl)=paste0("patient",1:5)
+# guanrank(tbl)
+# guanrank_elf(tbl)

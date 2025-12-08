@@ -51,92 +51,91 @@
 #'
 #'
 select_alpha.optimized <- function(
-    Object,
-    method = Object$method %||% c("binary", "survival"),
-    K,
-    cross_k = 5,
-    para_1_list = c(0.01, 0.005, 0.001),
-    para_2_list = c(0.01, 0.005, 0.001),
-    seed = SigBridgeRUtils::getFuncOption("seed") %||% 123L,
-    parallel = !inherits(future::plan("list")[[1]], "sequential"),
-    verbose = SigBridgeRUtils::getFuncOption("verbose") %||% TRUE
+  Object,
+  method = Object$method %||% c("binary", "survival"),
+  K,
+  cross_k = 5,
+  para_1_list = c(0.01, 0.005, 0.001),
+  para_2_list = c(0.01, 0.005, 0.001),
+  seed = SigBridgeRUtils::getFuncOption("seed") %||% 123L,
+  parallel = !inherits(future::plan("list")[[1]], "sequential"),
+  verbose = SigBridgeRUtils::getFuncOption("verbose") %||% TRUE
 ) {
-    if (verbose) {
-        ts_cli$cli_alert_info(
-            "Selecting optimal {.arg alpha} and {.arg alpha_2}, this would take a while"
-        )
-    }
-
-    train_phenotype <- PreparePheno(Object)
-    train_data <- Object$X
-
-    cvlist <- CVgroup2(k = cross_k, datasize = nrow(train_data), seed = seed)
-
-    train_data_norm <- train_data / Matrix::norm(train_data, "F")
-    fixed_matrices <- list(A = Object$A, L = Object$L, D = Object$D)
-
-    param_grid <- expand.grid(
-        para_1 = para_1_list,
-        para_2 = para_2_list,
-        stringsAsFactors = FALSE
+  if (verbose) {
+    ts_cli$cli_alert_info(
+      "Selecting optimal {.arg alpha} and {.arg alpha_2}, this would take a while"
     )
+  }
 
-    cv_results <- if (parallel) {
-        rlang::check_installed("furrr")
-        ParallelEvaluate(
-            method = method,
-            param_grid = param_grid,
-            train_data = train_data_norm,
-            train_phenotype = train_phenotype,
-            cvlist = cvlist,
-            fixed_matrices = fixed_matrices,
-            K = K,
-            cross_k = cross_k,
-            workers = workers,
-            verbose = verbose
-        )
-    } else {
-        SequentialEvaluate(
-            method = method,
-            param_grid = param_grid,
-            train_data = train_data_norm,
-            train_phenotype = train_phenotype,
-            cvlist = cvlist,
-            fixed_matrices = fixed_matrices,
-            K = K,
-            cross_k = cross_k,
-            verbose = verbose
-        )
-    }
+  train_phenotype <- PreparePheno(Object)
+  train_data <- Object$X
 
-    result_cv <- matrix(
-        cv_results,
-        nrow = length(para_1_list),
-        ncol = length(para_2_list),
-        dimnames = list(
-            para_1_list,
-            para_2_list
-        )
+  cvlist <- CVgroup2(k = cross_k, datasize = nrow(train_data), seed = seed)
+
+  train_data_norm <- train_data / Matrix::norm(train_data, "F")
+  fixed_matrices <- list(A = Object$A, L = Object$L, D = Object$D)
+
+  param_grid <- expand.grid(
+    para_1 = para_1_list,
+    para_2 = para_2_list,
+    stringsAsFactors = FALSE
+  )
+
+  cv_results <- if (parallel) {
+    rlang::check_installed("furrr")
+    ParallelEvaluate(
+      method = method,
+      param_grid = param_grid,
+      train_data = train_data_norm,
+      train_phenotype = train_phenotype,
+      cvlist = cvlist,
+      fixed_matrices = fixed_matrices,
+      K = K,
+      cross_k = cross_k,
+      verbose = verbose
     )
-
-    best_idx <- which(result_cv == max(result_cv), arr.ind = TRUE)[1, ]
-
-    alpha_1 <- para_1_list[best_idx[1]]
-    alpha_2 <- para_2_list[best_idx[2]]
-
-    if (verbose) {
-        ts_cli$cli_alert_success(
-            "Best {.arg alpha} and {.arg alpha_2} are {.val {alpha_1}} and {.val {alpha_2}}"
-        )
-    }
-
-    list(
-        para = list(
-            alpha_1 = alpha_1,
-            alpha_2 = alpha_2,
-            result_cv = result_cv
-        )
+  } else {
+    SequentialEvaluate(
+      method = method,
+      param_grid = param_grid,
+      train_data = train_data_norm,
+      train_phenotype = train_phenotype,
+      cvlist = cvlist,
+      fixed_matrices = fixed_matrices,
+      K = K,
+      cross_k = cross_k,
+      verbose = verbose
     )
+  }
+
+  result_cv <- matrix(
+    cv_results,
+    nrow = length(para_1_list),
+    ncol = length(para_2_list),
+    dimnames = list(
+      para_1_list,
+      para_2_list
+    )
+  )
+
+  best_idx <- which(result_cv == max(result_cv), arr.ind = TRUE)[1, ]
+
+  alpha_1 <- para_1_list[best_idx[1]]
+  alpha_2 <- para_2_list[best_idx[2]]
+
+  if (verbose) {
+    ts_cli$cli_alert_success(
+      "Best {.arg alpha} and {.arg alpha_2} are {.val {alpha_1}} and {.val {alpha_2}}"
+    )
+  }
+
+  list(
+    para = list(
+      alpha_1 = alpha_1,
+      alpha_2 = alpha_2,
+      result_cv = result_cv
+    )
+  )
 }
 
 #' @title Prepare Phenotype Data
@@ -153,15 +152,15 @@ select_alpha.optimized <- function(
 #' @family scAB_optimal_param
 #' @export
 PreparePheno <- function(Object) {
-    if (Object$method == "survival") {
-        return(Object$phenotype)
-    }
+  if (Object$method == "survival") {
+    return(Object$phenotype)
+  }
 
-    data.frame(
-        status = as.integer(Object$phenotype),
-        time = ifelse(Object$phenotype, 1, 100),
-        row.names = rownames(Object$X)
-    )
+  data.frame(
+    status = as.integer(Object$phenotype),
+    time = ifelse(Object$phenotype, 1, 100),
+    row.names = rownames(Object$X)
+  )
 }
 
 #' @title Sequential Parameter Evaluation
@@ -184,137 +183,137 @@ PreparePheno <- function(Object) {
 #' @family scAB_optimal_param
 #' @export
 SequentialEvaluate <- function(
-    method = c("binary", "survival"),
-    param_grid,
-    train_data,
-    train_phenotype,
-    cvlist,
-    fixed_matrices,
-    K,
-    cross_k,
-    verbose = TRUE
+  method = c("binary", "survival"),
+  param_grid,
+  train_data,
+  train_phenotype,
+  cvlist,
+  fixed_matrices,
+  K,
+  cross_k,
+  verbose = TRUE
 ) {
-    cv_cache <- vector("list", cross_k)
+  cv_cache <- vector("list", cross_k)
+
+  if (verbose) {
+    cli::cli_progress_bar(name = 'Preparing CV cache', total = cross_k)
+  }
+
+  for (cv_idx in seq_len(cross_k)) {
+    test_idx <- cvlist[[cv_idx]]
+    train_pheno <- train_phenotype[-test_idx, , drop = FALSE]
+
+    ss <- guanrank2(train_pheno[, c("time", "status")])
+    S_matrix <- diag(1 - ss[rownames(train_pheno), 3])
+
+    cv_cache[[cv_idx]] <- list(
+      train_subset = -test_idx, # string indices instead of data subset
+      test_subset = test_idx,
+      train_pheno = train_pheno,
+      test_pheno = train_phenotype[test_idx, , drop = FALSE],
+      S_matrix = S_matrix,
+      Object_template = list(
+        phenotype = train_pheno,
+        A = fixed_matrices$A,
+        L = fixed_matrices$L,
+        D = fixed_matrices$D,
+        method = method
+      )
+    )
+    if (verbose) {
+      cli::cli_progress_update()
+    }
+  }
+  if (verbose) {
+    cli::cli_progress_done()
+  }
+  n_params <- nrow(param_grid)
+
+  cv_scores_matrix <- matrix(0, nrow = n_params, ncol = cross_k)
+
+  for (param_idx in seq_len(n_params)) {
+    para_1 <- param_grid$para_1[param_idx]
+    para_2 <- param_grid$para_2[param_idx]
 
     if (verbose) {
-        cli::cli_progress_bar(name = 'Preparing CV cache', total = cross_k)
+      cli::cli_progress_bar(
+        name = sprintf(
+          'Alpha = %g, alpha_2 = %g',
+          para_1,
+          para_2
+        ),
+        total = cross_k
+      )
     }
-
     for (cv_idx in seq_len(cross_k)) {
-        test_idx <- cvlist[[cv_idx]]
-        train_pheno <- train_phenotype[-test_idx, , drop = FALSE]
+      cache <- cv_cache[[cv_idx]]
 
-        ss <- guanrank2(train_pheno[, c("time", "status")])
-        S_matrix <- diag(1 - ss[rownames(train_pheno), 3])
+      Object_cv <- c(
+        list(
+          # use indices now
+          X = train_data[cache$train_subset, , drop = FALSE],
+          S = cache$S_matrix
+        ),
+        cache$Object_template
+      )
+      class(Object_cv) <- "scAB_data"
 
-        cv_cache[[cv_idx]] <- list(
-            train_subset = -test_idx, # string indices instead of data subset
-            test_subset = test_idx,
-            train_pheno = train_pheno,
-            test_pheno = train_phenotype[test_idx, , drop = FALSE],
-            S_matrix = S_matrix,
-            Object_template = list(
-                phenotype = train_pheno,
-                A = fixed_matrices$A,
-                L = fixed_matrices$L,
-                D = fixed_matrices$D,
-                method = method
-            )
-        )
-        if (verbose) {
-            cli::cli_progress_update()
-        }
+      s_res <- scAB.optimized(
+        Object = Object_cv,
+        K = K,
+        alpha = para_1,
+        alpha_2 = para_2,
+        maxiter = 2000
+      )
+
+      ginvH <- SigBridgeRUtils::ginv2(s_res$H)
+      # use indices now,
+      # dgeMat, rownames = rownames(train_data)
+      new_W <- train_data[cache$test_subset, , drop = FALSE] %*% ginvH
+
+      n_features <- ncol(s_res$W)
+
+      clin_data <- cbind(
+        cache$train_pheno$time,
+        cache$train_pheno$status,
+        s_res$W
+      )
+
+      col_names <- c("time", "status", paste0("V", seq_len(n_features)))
+      clin_data <- as.data.frame(clin_data)
+      colnames(clin_data) <- col_names
+
+      res.cox <- survival::coxph(
+        survival::Surv(time, status) ~ .,
+        data = clin_data,
+        x = FALSE,
+        y = FALSE
+      )
+
+      new_W <- force(as.data.frame(as.matrix(new_W)))
+      colnames(new_W) <- paste0("V", seq_len(n_features))
+
+      pre_test <- stats::predict(res.cox, newdata = new_W, type = "lp")
+
+      cv_scores_matrix[param_idx, cv_idx] <- survival::concordance(
+        survival::Surv(
+          cache$test_pheno$time,
+          cache$test_pheno$status
+        ) ~ pre_test
+      )$concordance
+
+      if (verbose) {
+        cli::cli_progress_update()
+      }
     }
+
     if (verbose) {
-        cli::cli_progress_done()
+      cli::cli_progress_done()
     }
-    n_params <- nrow(param_grid)
+    gc(verbose = FALSE)
+  }
 
-    cv_scores_matrix <- matrix(0, nrow = n_params, ncol = cross_k)
-
-    for (param_idx in seq_len(n_params)) {
-        para_1 <- param_grid$para_1[param_idx]
-        para_2 <- param_grid$para_2[param_idx]
-
-        if (verbose) {
-            cli::cli_progress_bar(
-                name = sprintf(
-                    'Alpha = %g, alpha_2 = %g',
-                    para_1,
-                    para_2
-                ),
-                total = cross_k
-            )
-        }
-        for (cv_idx in seq_len(cross_k)) {
-            cache <- cv_cache[[cv_idx]]
-
-            Object_cv <- c(
-                list(
-                    # use indices now
-                    X = train_data[cache$train_subset, , drop = FALSE],
-                    S = cache$S_matrix
-                ),
-                cache$Object_template
-            )
-            class(Object_cv) <- "scAB_data"
-
-            s_res <- scAB.optimized(
-                Object = Object_cv,
-                K = K,
-                alpha = para_1,
-                alpha_2 = para_2,
-                maxiter = 2000
-            )
-
-            ginvH <- SigBridgeRUtils::ginv2(s_res$H)
-            # use indices now,
-            # dgeMat, rownames = rownames(train_data)
-            new_W <- train_data[cache$test_subset, , drop = FALSE] %*% ginvH
-
-            n_features <- ncol(s_res$W)
-
-            clin_data <- cbind(
-                cache$train_pheno$time,
-                cache$train_pheno$status,
-                s_res$W
-            )
-
-            col_names <- c("time", "status", paste0("V", seq_len(n_features)))
-            clin_data <- as.data.frame(clin_data)
-            colnames(clin_data) <- col_names
-
-            res.cox <- survival::coxph(
-                survival::Surv(time, status) ~ .,
-                data = clin_data,
-                x = FALSE,
-                y = FALSE
-            )
-
-            new_W <- force(as.data.frame(as.matrix(new_W)))
-            colnames(new_W) <- paste0("V", seq_len(n_features))
-
-            pre_test <- stats::predict(res.cox, newdata = new_W, type = "lp")
-
-            cv_scores_matrix[param_idx, cv_idx] <- survival::concordance(
-                survival::Surv(
-                    cache$test_pheno$time,
-                    cache$test_pheno$status
-                ) ~ pre_test
-            )$concordance
-
-            if (verbose) {
-                cli::cli_progress_update()
-            }
-        }
-
-        if (verbose) {
-            cli::cli_progress_done()
-        }
-        gc(verbose = FALSE)
-    }
-
-    rowMeans(cv_scores_matrix)
+  rowMeans(cv_scores_matrix)
 }
 
 
@@ -339,152 +338,152 @@ SequentialEvaluate <- function(
 #' @family scAB_optimal_param
 #' @export
 ParallelEvaluate <- function(
-    method = c("binary", "survival"),
-    param_grid,
-    train_data,
-    train_phenotype,
-    cvlist,
-    fixed_matrices,
-    K,
-    cross_k,
-    verbose = SigBridgeRUtils::getFuncOption("verbose") %||% TRUE,
-    seed = SigBridgeRUtils::getFuncOption("seed") %||% 123L
+  method = c("binary", "survival"),
+  param_grid,
+  train_data,
+  train_phenotype,
+  cvlist,
+  fixed_matrices,
+  K,
+  cross_k,
+  verbose = SigBridgeRUtils::getFuncOption("verbose") %||% TRUE,
+  seed = SigBridgeRUtils::getFuncOption("seed") %||% 123L
 ) {
-    on.exit({
-        gc(verbose = FALSE)
-    })
+  on.exit({
+    gc(verbose = FALSE)
+  })
 
-    if (verbose) {
-        ts_cli$cli_alert_info("Using parallel processing")
-        cli::cli_progress_bar(name = 'Preparing CV cache', total = cross_k)
-    }
+  if (verbose) {
+    ts_cli$cli_alert_info("Using parallel processing")
+    cli::cli_progress_bar(name = 'Preparing CV cache', total = cross_k)
+  }
 
-    cv_cache <- vector("list", cross_k)
+  cv_cache <- vector("list", cross_k)
 
-    for (cv_idx in seq_len(cross_k)) {
-        test_idx <- cvlist[[cv_idx]]
-        train_pheno <- train_phenotype[-test_idx, , drop = FALSE]
+  for (cv_idx in seq_len(cross_k)) {
+    test_idx <- cvlist[[cv_idx]]
+    train_pheno <- train_phenotype[-test_idx, , drop = FALSE]
 
-        ss <- guanrank2(train_pheno[, c("time", "status")])
-        S_matrix <- Matrix::diag(1 - ss[rownames(train_pheno), 3])
+    ss <- guanrank2(train_pheno[, c("time", "status")])
+    S_matrix <- Matrix::diag(1 - ss[rownames(train_pheno), 3])
 
-        cv_cache[[cv_idx]] <- list(
-            train_subset = -test_idx, # use indices now instead of subset
-            test_subset = test_idx,
-            train_pheno = train_pheno,
-            test_pheno = train_phenotype[test_idx, , drop = FALSE],
-            S_matrix = S_matrix,
-            Object_template = list(
-                phenotype = train_pheno,
-                A = fixed_matrices$A,
-                L = fixed_matrices$L,
-                D = fixed_matrices$D,
-                method = method
-            )
-        )
-        if (verbose) {
-            cli::cli_progress_update()
-        }
-    }
-    if (verbose) {
-        cli::cli_progress_done()
-    }
-
-    ScoringAll <- function(param_idx) {
-        para_1 <- param_grid$para_1[param_idx]
-        para_2 <- param_grid$para_2[param_idx]
-
-        cv_scores <- vapply(
-            X = seq_len(cross_k),
-            FUN = function(cv_idx) {
-                cache <- cv_cache[[cv_idx]]
-
-                Object_cv <- cache$Object_template
-                Object_cv$X <- train_data[cache$train_subset, , drop = FALSE]
-                Object_cv$S <- cache$S_matrix
-                class(Object_cv) <- "scAB_data"
-                # most of the time, this is the bottleneck
-                s_res <- scAB.optimized(
-                    Object = Object_cv,
-                    K = K,
-                    alpha = para_1,
-                    alpha_2 = para_2,
-                    maxiter = 2000L
-                )
-
-                ginvH <- SigBridgeRUtils::ginv2(s_res$H)
-                # use indices now,
-                # dgeMat, rownames = rownames(train_data)
-                new_W <- train_data[cache$test_subset, , drop = FALSE] %*% ginvH
-
-                n_features <- ncol(s_res$W)
-
-                clin_data <- cbind(
-                    cache$train_pheno$time,
-                    cache$train_pheno$status,
-                    s_res$W
-                )
-
-                col_names <- c(
-                    "time",
-                    "status",
-                    paste0("V", seq_len(n_features))
-                )
-                clin_data <- as.data.frame(clin_data)
-                colnames(clin_data) <- col_names
-
-                res.cox <- survival::coxph(
-                    survival::Surv(time, status) ~ .,
-                    data = clin_data,
-                    x = FALSE,
-                    y = FALSE
-                )
-
-                new_W <- force(as.data.frame(as.matrix(new_W)))
-                colnames(new_W) <- paste0("V", seq_len(n_features))
-
-                pre_test <- stats::predict(
-                    res.cox,
-                    newdata = new_W,
-                    type = "lp"
-                )
-
-                survival::concordance(
-                    survival::Surv(
-                        cache$test_pheno$time,
-                        cache$test_pheno$status
-                    ) ~ pre_test
-                )$concordance
-            },
-            FUN.VALUE = numeric(1)
-        )
-        gc(verbose = FALSE)
-        mean(cv_scores)
-    }
-
-    res <- furrr::future_map_dbl(
-        seq_len(nrow(param_grid)),
-        ScoringAll,
-        .progress = verbose,
-        .options = furrr::furrr_options(
-            seed = seed,
-            packages = c(
-                "survival",
-                "SigBridgeRUtils",
-                "Matrix",
-                "Rcpp",
-                "scAB"
-            ),
-            globals = list(
-                cv_cache = cv_cache,
-                K = K,
-                method = method,
-                train_data = train_data,
-                cross_k = cross_k,
-                param_grid = param_grid
-            )
-        )
+    cv_cache[[cv_idx]] <- list(
+      train_subset = -test_idx, # use indices now instead of subset
+      test_subset = test_idx,
+      train_pheno = train_pheno,
+      test_pheno = train_phenotype[test_idx, , drop = FALSE],
+      S_matrix = S_matrix,
+      Object_template = list(
+        phenotype = train_pheno,
+        A = fixed_matrices$A,
+        L = fixed_matrices$L,
+        D = fixed_matrices$D,
+        method = method
+      )
     )
+    if (verbose) {
+      cli::cli_progress_update()
+    }
+  }
+  if (verbose) {
+    cli::cli_progress_done()
+  }
 
-    res
+  ScoringAll <- function(param_idx) {
+    para_1 <- param_grid$para_1[param_idx]
+    para_2 <- param_grid$para_2[param_idx]
+
+    cv_scores <- vapply(
+      X = seq_len(cross_k),
+      FUN = function(cv_idx) {
+        cache <- cv_cache[[cv_idx]]
+
+        Object_cv <- cache$Object_template
+        Object_cv$X <- train_data[cache$train_subset, , drop = FALSE]
+        Object_cv$S <- cache$S_matrix
+        class(Object_cv) <- "scAB_data"
+        # most of the time, this is the bottleneck
+        s_res <- scAB.optimized(
+          Object = Object_cv,
+          K = K,
+          alpha = para_1,
+          alpha_2 = para_2,
+          maxiter = 2000L
+        )
+
+        ginvH <- SigBridgeRUtils::ginv2(s_res$H)
+        # use indices now,
+        # dgeMat, rownames = rownames(train_data)
+        new_W <- train_data[cache$test_subset, , drop = FALSE] %*% ginvH
+
+        n_features <- ncol(s_res$W)
+
+        clin_data <- cbind(
+          cache$train_pheno$time,
+          cache$train_pheno$status,
+          s_res$W
+        )
+
+        col_names <- c(
+          "time",
+          "status",
+          paste0("V", seq_len(n_features))
+        )
+        clin_data <- as.data.frame(clin_data)
+        colnames(clin_data) <- col_names
+
+        res.cox <- survival::coxph(
+          survival::Surv(time, status) ~ .,
+          data = clin_data,
+          x = FALSE,
+          y = FALSE
+        )
+
+        new_W <- force(as.data.frame(as.matrix(new_W)))
+        colnames(new_W) <- paste0("V", seq_len(n_features))
+
+        pre_test <- stats::predict(
+          res.cox,
+          newdata = new_W,
+          type = "lp"
+        )
+
+        survival::concordance(
+          survival::Surv(
+            cache$test_pheno$time,
+            cache$test_pheno$status
+          ) ~ pre_test
+        )$concordance
+      },
+      FUN.VALUE = numeric(1)
+    )
+    gc(verbose = FALSE)
+    mean(cv_scores)
+  }
+
+  res <- furrr::future_map_dbl(
+    seq_len(nrow(param_grid)),
+    ScoringAll,
+    .progress = verbose,
+    .options = furrr::furrr_options(
+      seed = seed,
+      packages = c(
+        "survival",
+        "SigBridgeRUtils",
+        "Matrix",
+        "Rcpp",
+        "scAB"
+      ),
+      globals = list(
+        cv_cache = cv_cache,
+        K = K,
+        method = method,
+        train_data = train_data,
+        cross_k = cross_k,
+        param_grid = param_grid
+      )
+    )
+  )
+
+  res
 }
