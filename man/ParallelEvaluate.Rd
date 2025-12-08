@@ -13,10 +13,8 @@ ParallelEvaluate(
   fixed_matrices,
   K,
   cross_k,
-  workers = SigBridgeRUtils::getFuncOption("workers"),
-  verbose = SigBridgeRUtils::getFuncOption("verbose"),
-  parallel_type = SigBridgeRUtils::getFuncOption("parallel.type"),
-  seed = SigBridgeRUtils::getFuncOption("seed")
+  verbose = SigBridgeRUtils::getFuncOption("verbose") \%||\% TRUE,
+  seed = SigBridgeRUtils::getFuncOption("seed") \%||\% 123L
 )
 }
 \arguments{
@@ -36,11 +34,7 @@ ParallelEvaluate(
 
 \item{cross_k}{Number of cross-validation folds}
 
-\item{workers}{Number of parallel workers}
-
 \item{verbose}{Whether to show progress}
-
-\item{parallel_type}{Type of parallel backend to use}
 
 \item{seed}{Random seed for reproducibility}
 }

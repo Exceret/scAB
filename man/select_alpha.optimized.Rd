@@ -12,8 +12,7 @@ select_alpha.optimized(
   para_1_list = c(0.01, 0.005, 0.001),
   para_2_list = c(0.01, 0.005, 0.001),
   seed = SigBridgeRUtils::getFuncOption("seed") \%||\% 123L,
-  parallel = SigBridgeRUtils::getFuncOption("parallel") \%||\% FALSE,
-  workers = SigBridgeRUtils::getFuncOption("workers") \%||\% 4L,
+  parallel = !inherits(future::plan("list")[[1]], "sequential"),
   verbose = SigBridgeRUtils::getFuncOption("verbose") \%||\% TRUE
 )
 }
@@ -46,10 +45,6 @@ Defaults to 0.}
 
 \item{parallel}{Logical indicating whether to use parallel processing for
 parameter evaluation. Defaults to \code{FALSE}.}
-
-\item{workers}{Number of parallel workers to use if \code{parallel = TRUE}.
-If \code{NULL}, uses available cores minus one. Defaults to
-\code{NULL}.}
 
 \item{verbose}{Logical indicating whether to print progress messages.
 Defaults to \code{TRUE}.}
