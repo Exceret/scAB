@@ -33,7 +33,7 @@
 #' @family scAB
 #'
 NMF.optimized <- function(Object, K, maxiter = 2000L, tol = 1e-5) {
-  X = if (inherits(Object, "scAB_data")) Object$X else Object
+  X <- if (inherits(Object, "scAB_data")) Object$X else Object
   # Cpp Func
   NMF_optimized(X = as.matrix(X), K = K, maxiter = maxiter, tol = tol)
 }

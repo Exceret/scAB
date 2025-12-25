@@ -191,7 +191,11 @@ create_scAB.v5 <- function(
     )
   }
 
-  X <- stats::cor(Expression_bulk, Expression_cell)
+  X <- if (rlang::is_installed("WGCNA")) {
+    WGCNA::cor(Expression_bulk, Expression_cell)
+  } else {
+    stats::cor(Expression_bulk, Expression_cell)
+  }
   X <- X / Matrix::norm(X, "F")
 
   if (verbose) {

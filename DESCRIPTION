@@ -2,7 +2,7 @@ Package: scAB
 Type: Package
 Title: R package for integrating single-cell and bulk RNA-seq data with
         phenotype information
-Version: 1.0.2
+Version: 1.0.3
 Author: Qinran Zhang
 Maintainer: Qinran Zhang<qr_zhang@whu.edu.cn>
 Description: R toolkit for integrating single-cell and bulk RNA-seq data with phenotype information.
@@ -24,7 +24,8 @@ Imports:
     methods,
     rlang
 Remotes:
-    github::WangLabCSU/SigBridgeRUtils
+    github::WangLabCSU/SigBridgeRUtils,
+    bioc::WGCNA
 RoxygenNote: 7.3.3
 NeedsCompilation: no
 Packaged: 2022-04-18 01:11:46 UTC; MSI-NB
@@ -35,7 +36,8 @@ Suggests:
     matrixStats,
     pak,
     preprocessCore,
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    WGCNA
 LinkingTo: 
     Rcpp,
     RcppArmadillo
