@@ -58,13 +58,16 @@ select_alpha.optimized <- function(
   para_1_list = c(0.01, 0.005, 0.001),
   para_2_list = c(0.01, 0.005, 0.001),
   seed = SigBridgeRUtils::getFuncOption("seed") %||% 123L,
-  parallel = !inherits(future::plan("list")[[1]], "sequential"),
+  parallel = FALSE,
   verbose = SigBridgeRUtils::getFuncOption("verbose") %||% TRUE
 ) {
   if (verbose) {
     ts_cli$cli_alert_info(
       "Selecting optimal {.arg alpha} and {.arg alpha_2}, this would take a while"
     )
+  }
+  if (parallel && inherits(future::plan("list")[[1]], "sequential")) {
+    cli::cli_warn("{.arg parallel} is set to TRUE, but the plan is sequential")
   }
 
   train_phenotype <- PreparePheno(Object)
@@ -108,14 +111,24 @@ select_alpha.optimized <- function(
     )
   }
 
+  if (all(is.na(cv_results))) {
+    cli::cli_warn(
+      "{.strong During Selecting Alpha}: All cross-validation results are {.val NA}. Please Check data quality and model stability. Return default parameters now"
+    )
+    return(list(
+      para = list(
+        alpha_1 = 0.005,
+        alpha_2 = 0.005,
+        result_cv = NULL
+      )
+    ))
+  }
+
   result_cv <- matrix(
     cv_results,
     nrow = length(para_1_list),
     ncol = length(para_2_list),
-    dimnames = list(
-      para_1_list,
-      para_2_list
-    )
+    dimnames = list(toString(para_1_list), toString(para_2_list))
   )
 
   best_idx <- which(result_cv == max(result_cv), arr.ind = TRUE)[1, ]

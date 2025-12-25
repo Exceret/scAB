@@ -12,7 +12,7 @@ select_alpha.optimized(
   para_1_list = c(0.01, 0.005, 0.001),
   para_2_list = c(0.01, 0.005, 0.001),
   seed = SigBridgeRUtils::getFuncOption("seed") \%||\% 123L,
-  parallel = !inherits(future::plan("list")[[1]], "sequential"),
+  parallel = FALSE,
   verbose = SigBridgeRUtils::getFuncOption("verbose") \%||\% TRUE
 )
 }
