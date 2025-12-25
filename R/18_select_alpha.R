@@ -128,7 +128,7 @@ select_alpha.optimized <- function(
     cv_results,
     nrow = length(para_1_list),
     ncol = length(para_2_list),
-    dimnames = list(toString(para_1_list), toString(para_2_list))
+    dimnames = list(para_1_list, para_2_list)
   )
 
   best_idx <- which(result_cv == max(result_cv), arr.ind = TRUE)[1, ]
