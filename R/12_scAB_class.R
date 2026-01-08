@@ -125,32 +125,28 @@ create_scAB.v5 <- function(
   verbose = SigBridgeRUtils::getFuncOption("verbose") %||% TRUE,
   ...
 ) {
+  dots <- rlang::list2()
+  assay <- dots$assay %||% "RNA"
+
+  graph_name <- paste0(assay, "_snn")
   # cell neighbors
-  A <- if ("RNA_snn" %in% names(Object@graphs)) {
+  A <- if (graph_name %in% names(Object@graphs)) {
     if (verbose) {
       cli::cli_alert_info(
-        " Using {.val RNA_snn} graph for network."
+        " Using {.val {graph_name}} graph for network."
       )
     }
-    Matrix::Matrix(SeuratObject::Graphs(
+    SeuratObject::Graphs(
       object = Object,
-      slot = "RNA_snn"
-    ))
-  } else if ("integrated_snn" %in% names(Object@graphs)) {
-    if (verbose) {
-      cli::cli_alert_info(
-        "Using {.val integrated_snn} graph for network."
-      )
-    }
-    Matrix::Matrix(SeuratObject::Graphs(
-      object = Object,
-      slot = "integrated_snn"
-    ))
+      slot = graph_name
+    )
   } else {
     cli::cli_abort(c(
-      "x" = "No `RNA_snn` or `integrated_snn` graph in the given Seurat object. Please check `Object@graphs`."
+      "x" = "{.val {graph_name}} graph not found in the given Seurat object. 
+      Please check `Object@graphs`."
     ))
   }
+
   if (verbose) {
     ts_cli$cli_alert_info(
       "Calculating L, D and A"
@@ -160,7 +156,7 @@ create_scAB.v5 <- function(
   cal_res <- ComputeNormalizedLaplacian(A)
 
   # similarity matrix
-  sc_exprs <- Matrix::Matrix(SeuratObject::LayerData(Object))
+  sc_exprs <- Matrix::Matrix(SeuratObject::LayerData(Object, assay = assay))
   common <- intersect(rownames(bulk_dataset), rownames(sc_exprs))
 
   bulk_mat <- Matrix::Matrix(as.matrix(bulk_dataset[common, ]))
