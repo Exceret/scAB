@@ -25,7 +25,7 @@ two columns "time" and "state", or a vector}
 
 \item{verbose}{Logical, whether to print messages.}
 
-\item{...}{For future updates.}
+\item{...}{Other arguments like `assay`.}
 }
 \value{
 a scAB_data

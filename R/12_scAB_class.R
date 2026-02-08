@@ -108,7 +108,7 @@ setClass(
 #'    two columns "time" and "state", or a vector
 #' @param method method "survival" or "binary"
 #' @param verbose Logical, whether to print messages.
-#' @param ... For future updates.
+#' @param ... Other arguments like `assay`.
 #'
 #' @return a scAB_data
 #'
@@ -125,7 +125,7 @@ create_scAB.v5 <- function(
   verbose = SigBridgeRUtils::getFuncOption("verbose") %||% TRUE,
   ...
 ) {
-  dots <- rlang::list2()
+  dots <- rlang::list2(...)
   assay <- dots$assay %||% "RNA"
 
   graph_name <- paste0(assay, "_snn")
